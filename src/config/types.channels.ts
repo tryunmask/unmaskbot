@@ -19,6 +19,15 @@ export type ChannelHeartbeatVisibilityConfig = {
 
 export type ChannelDefaultsConfig = {
   groupPolicy?: GroupPolicy;
+  /**
+   * Shared allowlist entries applied across channels.
+   *
+   * IMPORTANT: Prefer provider-prefixed entries to avoid accidental cross-channel matches.
+   * Examples: "whatsapp:+14155552671", "slack:U0123ABC", "telegram:123456789", "discord:123..."
+   *
+   * Use channel-specific allowlists (e.g. channels.whatsapp.allowFrom) for unprefixed IDs.
+   */
+  allowFrom?: Array<string | number>;
   /** Default heartbeat visibility for all channels. */
   heartbeat?: ChannelHeartbeatVisibilityConfig;
 };

@@ -5,6 +5,7 @@ import SlackBolt from "@slack/bolt";
 import { resolveTextChunkLimit } from "../../auto-reply/chunk.js";
 import { DEFAULT_GROUP_HISTORY_LIMIT } from "../../auto-reply/reply/history.js";
 import { mergeAllowlist, summarizeMapping } from "../../channels/allowlists/resolve-utils.js";
+import { filterAllowFromByPrefixes } from "../../channels/shared-allowfrom.js";
 import { loadConfig } from "../../config/config.js";
 import type { SessionScope } from "../../config/sessions.js";
 import type { DmPolicy, GroupPolicy } from "../../config/types.js";
@@ -93,6 +94,13 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
   const dmEnabled = dmConfig?.enabled ?? true;
   const dmPolicy = (dmConfig?.policy ?? "pairing") as DmPolicy;
   let allowFrom = dmConfig?.allowFrom;
+  const defaultAllowFrom = filterAllowFromByPrefixes({
+    allowFrom: cfg.channels?.defaults?.allowFrom,
+    prefixes: ["slack:", "user:"],
+  });
+  if (defaultAllowFrom.length > 0) {
+    allowFrom = [...(allowFrom ?? []), ...defaultAllowFrom];
+  }
   const groupDmEnabled = dmConfig?.groupEnabled ?? false;
   const groupDmChannels = dmConfig?.groupChannels;
   let channelsConfig = slackCfg.channels;

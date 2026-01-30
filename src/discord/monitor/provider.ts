@@ -7,6 +7,7 @@ import { listNativeCommandSpecsForConfig } from "../../auto-reply/commands-regis
 import { listSkillCommandsForAgents } from "../../auto-reply/skill-commands.js";
 import type { HistoryEntry } from "../../auto-reply/reply/history.js";
 import { mergeAllowlist, summarizeMapping } from "../../channels/allowlists/resolve-utils.js";
+import { filterAllowFromByPrefixes } from "../../channels/shared-allowfrom.js";
 import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
@@ -168,6 +169,13 @@ export async function monitorDiscordProvider(opts: MonitorDiscordOpts = {}) {
     );
   }
   let allowFrom = dmConfig?.allowFrom;
+  const defaultAllowFrom = filterAllowFromByPrefixes({
+    allowFrom: cfg.channels?.defaults?.allowFrom,
+    prefixes: ["discord:", "user:"],
+  });
+  if (defaultAllowFrom.length > 0) {
+    allowFrom = [...(allowFrom ?? []), ...defaultAllowFrom];
+  }
   const mediaMaxBytes = (opts.mediaMaxMb ?? discordCfg.mediaMaxMb ?? 8) * 1024 * 1024;
   const textLimit = resolveTextChunkLimit(cfg, "discord", account.accountId, {
     fallbackLimit: 2000,

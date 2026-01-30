@@ -7,6 +7,7 @@ import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { isControlCommandMessage } from "../auto-reply/command-detection.js";
 import { resolveTextChunkLimit } from "../auto-reply/chunk.js";
 import { DEFAULT_GROUP_HISTORY_LIMIT, type HistoryEntry } from "../auto-reply/reply/history.js";
+import { filterAllowFromByPrefixes } from "../channels/shared-allowfrom.js";
 import {
   isNativeCommandsExplicitlyDisabled,
   resolveNativeCommandsEnabled,
@@ -226,7 +227,15 @@ export function createTelegramBot(opts: TelegramBotOptions) {
   const groupHistories = new Map<string, HistoryEntry[]>();
   const textLimit = resolveTextChunkLimit(cfg, "telegram", account.accountId);
   const dmPolicy = telegramCfg.dmPolicy ?? "pairing";
-  const allowFrom = opts.allowFrom ?? telegramCfg.allowFrom;
+  const allowFrom = (() => {
+    const base = opts.allowFrom ?? telegramCfg.allowFrom;
+    const defaults = filterAllowFromByPrefixes({
+      allowFrom: cfg.channels?.defaults?.allowFrom,
+      prefixes: ["tg:", "telegram:"],
+    });
+    if (defaults.length === 0) return base;
+    return [...(base ?? []), ...defaults];
+  })();
   const groupAllowFrom =
     opts.groupAllowFrom ??
     telegramCfg.groupAllowFrom ??
