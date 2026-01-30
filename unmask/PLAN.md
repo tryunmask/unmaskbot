@@ -17,6 +17,7 @@
 - Tighten onboarding copy and minimum required fields.
 - Add validation + dedupe on outbound messages.
 - Add structured logging for tool calls.
+- Define per-user memory strategy for shared inboxes (avoid cross-user leakage).
 
 ### Phase 3 — Productization
 - Remove or disable unrelated Moltbot features.

@@ -21,3 +21,16 @@ See `config/unmask.example.json5` for:
 - `agents.list` (scout, talent, company)
 - `bindings` for WhatsApp account routing
 - plugin enablement for Unmask tools
+
+## Backend API
+See `unmask/API.md` for the gateway-to-backend endpoint contract.
+
+## Mock API (local)
+Use the mock API when you want tool calls to succeed without a real backend.
+
+Run:
+- `UNMASK_MOCK_PORT=4010 UNMASK_API_TOKEN=dev bun scripts/unmask-mock-api.ts`
+
+Then set in config or env:
+- `UNMASK_API_BASE_URL=http://localhost:4010`
+- `UNMASK_API_TOKEN=dev`

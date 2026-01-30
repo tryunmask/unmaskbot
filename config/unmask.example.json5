@@ -3,25 +3,28 @@
 {
   agents: {
     defaults: {
-      skipBootstrap: true
+      skipBootstrap: true,
+      memorySearch: {
+        enabled: false
+      }
     },
     list: [
       {
         id: "scout",
         name: "Scout Agent",
-        workspace: "~/unmask/agents/scout",
+        workspace: "~/unmaskbot/unmask/agents/scout",
         tools: { allow: ["unmask"] }
       },
       {
         id: "talent",
         name: "Talent Agent",
-        workspace: "~/unmask/agents/talent",
+        workspace: "~/unmaskbot/unmask/agents/talent",
         tools: { allow: ["unmask"] }
       },
       {
         id: "company",
         name: "Company Agent",
-        workspace: "~/unmask/agents/company",
+        workspace: "~/unmaskbot/unmask/agents/company",
         tools: { allow: ["unmask"] }
       }
     ]
