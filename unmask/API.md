@@ -37,9 +37,12 @@ Response:
 {
   "shouldRespond": true,
   "reason": "string",
-  "source": "policy | backend | fallback"
+  "source": "policy | backend | fallback",
+  "user": { "name": "string (optional)" }
 }
 ```
+
+When the backend knows the sender (e.g. by phone in Convex), it may include `user.name` so the agent can personalize without asking.
 
 ### 2) Create scout referral
 `POST /v1/scout/referrals`
