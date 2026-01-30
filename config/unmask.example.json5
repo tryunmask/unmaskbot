@@ -32,7 +32,14 @@
   bindings: [
     { match: { channel: "whatsapp", accountId: "scout" }, agentId: "scout" },
     { match: { channel: "whatsapp", accountId: "talent" }, agentId: "talent" },
-    { match: { channel: "whatsapp", accountId: "company" }, agentId: "company" }
+    { match: { channel: "whatsapp", accountId: "company" }, agentId: "company" },
+
+    // Telegram: use 3 bot accounts so Scout/Talent/Company can each talk to the end user.
+    // Each bot token is configured under channels.telegram.accounts.<accountId>.botToken
+    // and routed to the matching agent via bindings below.
+    { match: { channel: "telegram", accountId: "scout" }, agentId: "scout" },
+    { match: { channel: "telegram", accountId: "talent" }, agentId: "talent" },
+    { match: { channel: "telegram", accountId: "company" }, agentId: "company" },
   ],
   channels: {
     whatsapp: {
@@ -43,6 +50,19 @@
         talent: { enabled: true },
         company: { enabled: true }
       }
+    },
+    telegram: {
+      enabled: true,
+      dmPolicy: "pairing",
+
+      // Optional allowlist (recommended if you don't want random DMs):
+      // allowFrom: ["123456789"],
+
+      accounts: {
+        scout: { enabled: true, botToken: "REPLACE_ME_SCOUT_BOT_TOKEN" },
+        talent: { enabled: true, botToken: "REPLACE_ME_TALENT_BOT_TOKEN" },
+        company: { enabled: true, botToken: "REPLACE_ME_COMPANY_BOT_TOKEN" },
+      },
     }
   },
   plugins: {
