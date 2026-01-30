@@ -98,6 +98,7 @@ export const WhatsAppConfigSchema = z
         reactions: z.boolean().optional(),
         sendMessage: z.boolean().optional(),
         polls: z.boolean().optional(),
+        groupCreate: z.boolean().optional(),
       })
       .strict()
       .optional(),

@@ -1,4 +1,4 @@
-import type { AnyMessageContent, WAPresence } from "@whiskeysockets/baileys";
+import type { AnyMessageContent, WAGroupCreateResponse, WAPresence } from "@whiskeysockets/baileys";
 import { recordChannelActivity } from "../../infra/channel-activity.js";
 import { toWhatsappJid } from "../../utils.js";
 import type { ActiveWebSendOptions } from "../active-listener.js";
@@ -7,6 +7,7 @@ export function createWebSendApi(params: {
   sock: {
     sendMessage: (jid: string, content: AnyMessageContent) => Promise<unknown>;
     sendPresenceUpdate: (presence: WAPresence, jid?: string) => Promise<unknown>;
+    createGroup: (subject: string, participants: string[]) => Promise<WAGroupCreateResponse>;
   };
   defaultAccountId: string;
 }) {
@@ -107,6 +108,19 @@ export function createWebSendApi(params: {
     sendComposingTo: async (to: string): Promise<void> => {
       const jid = toWhatsappJid(to);
       await params.sock.sendPresenceUpdate("composing", jid);
+    },
+    createGroup: async (
+      subject: string,
+      participants: string[],
+    ): Promise<WAGroupCreateResponse> => {
+      const normalizedParticipants = participants.map((participant) => toWhatsappJid(participant));
+      const result = await params.sock.createGroup(subject, normalizedParticipants);
+      recordChannelActivity({
+        channel: "whatsapp",
+        accountId: params.defaultAccountId,
+        direction: "outbound",
+      });
+      return result;
     },
   } as const;
 }

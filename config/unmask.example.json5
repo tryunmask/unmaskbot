@@ -1,0 +1,65 @@
+// Unmask sample configuration (JSON5).
+// Copy to ~/.clawdbot/moltbot.json and edit paths + credentials.
+{
+  agents: {
+    defaults: {
+      skipBootstrap: true
+    },
+    list: [
+      {
+        id: "scout",
+        name: "Scout Agent",
+        workspace: "~/unmask/agents/scout",
+        tools: { allow: ["unmask"] }
+      },
+      {
+        id: "talent",
+        name: "Talent Agent",
+        workspace: "~/unmask/agents/talent",
+        tools: { allow: ["unmask"] }
+      },
+      {
+        id: "company",
+        name: "Company Agent",
+        workspace: "~/unmask/agents/company",
+        tools: { allow: ["unmask"] }
+      }
+    ]
+  },
+  bindings: [
+    { match: { channel: "whatsapp", accountId: "scout" }, agentId: "scout" },
+    { match: { channel: "whatsapp", accountId: "talent" }, agentId: "talent" },
+    { match: { channel: "whatsapp", accountId: "company" }, agentId: "company" }
+  ],
+  channels: {
+    whatsapp: {
+      dmPolicy: "pairing",
+      allowFrom: ["+447700900123"],
+      accounts: {
+        scout: { enabled: true },
+        talent: { enabled: true },
+        company: { enabled: true }
+      }
+    }
+  },
+  plugins: {
+    enabled: true,
+    entries: {
+      unmask: {
+        enabled: true,
+        config: {
+          apiBaseUrl: "https://api.unmask.example",
+          apiToken: "REPLACE_ME",
+          endpoints: {
+            shouldRespond: "/v1/agents/should-respond",
+            createReferral: "/v1/scout/referrals",
+            onboardTalent: "/v1/talent/onboard",
+            requestIntro: "/v1/talent/intro-request",
+            acceptIntro: "/v1/company/intro-accept",
+            declineIntro: "/v1/company/intro-decline"
+          }
+        }
+      }
+    }
+  }
+}

@@ -88,8 +88,8 @@ describe("daemon-cli coverage", () => {
   };
 
   beforeEach(() => {
-    process.env.CLAWDBOT_STATE_DIR = "/tmp/moltbot-cli-state";
-    process.env.CLAWDBOT_CONFIG_PATH = "/tmp/moltbot-cli-state/moltbot.json";
+    process.env.UNMASKBOT_STATE_DIR = "/tmp/unmaskbot-cli-state";
+    process.env.UNMASKBOT_CONFIG_PATH = "/tmp/unmaskbot-cli-state/unmaskbot.json";
     delete process.env.CLAWDBOT_GATEWAY_PORT;
     delete process.env.CLAWDBOT_PROFILE;
     serviceReadCommand.mockResolvedValue(null);
@@ -141,8 +141,8 @@ describe("daemon-cli coverage", () => {
       programArguments: ["/bin/node", "cli", "gateway", "--port", "19001"],
       environment: {
         CLAWDBOT_PROFILE: "dev",
-        CLAWDBOT_STATE_DIR: "/tmp/moltbot-daemon-state",
-        CLAWDBOT_CONFIG_PATH: "/tmp/moltbot-daemon-state/moltbot.json",
+        UNMASKBOT_STATE_DIR: "/tmp/unmaskbot-daemon-state",
+        UNMASKBOT_CONFIG_PATH: "/tmp/unmaskbot-daemon-state/unmaskbot.json",
         CLAWDBOT_GATEWAY_PORT: "19001",
       },
       sourcePath: "/tmp/bot.molt.gateway.plist",

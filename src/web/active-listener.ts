@@ -1,4 +1,6 @@
 import { formatCliCommand } from "../cli/command-format.js";
+import type { WAGroupCreateResponse } from "@whiskeysockets/baileys";
+
 import type { PollInput } from "../polls.js";
 import { DEFAULT_ACCOUNT_ID } from "../routing/session-key.js";
 
@@ -16,6 +18,7 @@ export type ActiveWebListener = {
     options?: ActiveWebSendOptions,
   ) => Promise<{ messageId: string }>;
   sendPoll: (to: string, poll: PollInput) => Promise<{ messageId: string }>;
+  createGroup: (subject: string, participants: string[]) => Promise<WAGroupCreateResponse>;
   sendReaction: (
     chatJid: string,
     messageId: string,

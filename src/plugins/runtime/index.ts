@@ -121,7 +121,7 @@ import {
 } from "../../web/auth-store.js";
 import { loginWeb } from "../../web/login.js";
 import { startWebLoginWithQr, waitForWebLogin } from "../../web/login-qr.js";
-import { sendMessageWhatsApp, sendPollWhatsApp } from "../../web/outbound.js";
+import { createGroupWhatsApp, sendMessageWhatsApp, sendPollWhatsApp } from "../../web/outbound.js";
 import { registerMemoryCli } from "../../cli/memory-cli.js";
 import { formatNativeDependencyHint } from "./native-deps.js";
 import { textToSpeechTelephony } from "../../tts/tts.js";
@@ -311,6 +311,7 @@ export function createPluginRuntime(): PluginRuntime {
         webAuthExists,
         sendMessageWhatsApp,
         sendPollWhatsApp,
+        createGroupWhatsApp,
         loginWeb,
         startWebLoginWithQr,
         waitForWebLogin,

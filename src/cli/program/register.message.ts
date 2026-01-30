@@ -20,6 +20,7 @@ import { registerMessageReadEditDeleteCommands } from "./message/register.read-e
 import { registerMessageSendCommand } from "./message/register.send.js";
 import { registerMessageThreadCommands } from "./message/register.thread.js";
 import { registerMessageBroadcastCommand } from "./message/register.broadcast.js";
+import { registerMessageGroupCreateCommand } from "./message/register.group-create.js";
 
 export function registerMessageCommands(program: Command, ctx: ProgramContext) {
   const message = program
@@ -31,22 +32,22 @@ export function registerMessageCommands(program: Command, ctx: ProgramContext) {
         `
 ${theme.heading("Examples:")}
 ${formatHelpExamples([
-  ['moltbot message send --target +15555550123 --message "Hi"', "Send a text message."],
+  ['unmaskbot message send --target +15555550123 --message "Hi"', "Send a text message."],
   [
-    'moltbot message send --target +15555550123 --message "Hi" --media photo.jpg',
+    'unmaskbot message send --target +15555550123 --message "Hi" --media photo.jpg',
     "Send a message with media.",
   ],
   [
-    'moltbot message poll --channel discord --target channel:123 --poll-question "Snack?" --poll-option Pizza --poll-option Sushi',
+    'unmaskbot message poll --channel discord --target channel:123 --poll-question "Snack?" --poll-option Pizza --poll-option Sushi',
     "Create a Discord poll.",
   ],
   [
-    'moltbot message react --channel discord --target 123 --message-id 456 --emoji "✅"',
+    'unmaskbot message react --channel discord --target 123 --message-id 456 --emoji "✅"',
     "React to a message.",
   ],
 ])}
 
-${theme.muted("Docs:")} ${formatDocsLink("/cli/message", "docs.molt.bot/cli/message")}`,
+${theme.muted("Docs:")} ${formatDocsLink("/cli/message", "docs.unmask.ai/cli/message")}`,
     )
     .action(() => {
       message.help({ error: true });
@@ -65,4 +66,5 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/message", "docs.molt.bot/cli/mess
   registerMessageEmojiCommands(message, helpers);
   registerMessageStickerCommands(message, helpers);
   registerMessageDiscordAdminCommands(message, helpers);
+  registerMessageGroupCreateCommand(message, helpers);
 }

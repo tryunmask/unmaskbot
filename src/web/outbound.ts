@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 
+import type { WAGroupCreateResponse } from "@whiskeysockets/baileys";
+
 import { getChildLogger } from "../logging/logger.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { normalizePollInput, type PollInput } from "../polls.js";
@@ -171,6 +173,43 @@ export async function sendPollWhatsApp(
     logger.error(
       { err: String(err), to, question: poll.question },
       "failed to send poll via web session",
+    );
+    throw err;
+  }
+}
+
+export async function createGroupWhatsApp(
+  subject: string,
+  participants: string[],
+  options: { verbose: boolean; accountId?: string },
+): Promise<WAGroupCreateResponse> {
+  const correlationId = randomUUID();
+  const startedAt = Date.now();
+  const { listener: active, accountId: resolvedAccountId } = requireActiveWebListener(
+    options.accountId,
+  );
+  const logger = getChildLogger({
+    module: "web-outbound",
+    correlationId,
+    subject,
+  });
+  try {
+    outboundLog.info(
+      `Creating group "${subject}" with ${participants.length} participants (account ${resolvedAccountId})`,
+    );
+    logger.info(
+      { participantCount: participants.length, accountId: resolvedAccountId },
+      "creating group",
+    );
+    const result = await active.createGroup(subject, participants);
+    const durationMs = Date.now() - startedAt;
+    outboundLog.info(`Created group "${subject}" (${durationMs}ms)`);
+    logger.info({ result }, "created group");
+    return result;
+  } catch (err) {
+    logger.error(
+      { err: String(err), subject, participantCount: participants.length },
+      "failed to create group via web session",
     );
     throw err;
   }

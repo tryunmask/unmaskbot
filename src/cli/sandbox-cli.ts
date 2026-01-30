@@ -15,30 +15,33 @@ type CommandOptions = Record<string, unknown>;
 
 const SANDBOX_EXAMPLES = {
   main: [
-    ["moltbot sandbox list", "List all sandbox containers."],
-    ["moltbot sandbox list --browser", "List only browser containers."],
-    ["moltbot sandbox recreate --all", "Recreate all containers."],
-    ["moltbot sandbox recreate --session main", "Recreate a specific session."],
-    ["moltbot sandbox recreate --agent mybot", "Recreate agent containers."],
-    ["moltbot sandbox explain", "Explain effective sandbox config."],
+    ["unmaskbot sandbox list", "List all sandbox containers."],
+    ["unmaskbot sandbox list --browser", "List only browser containers."],
+    ["unmaskbot sandbox recreate --all", "Recreate all containers."],
+    ["unmaskbot sandbox recreate --session main", "Recreate a specific session."],
+    ["unmaskbot sandbox recreate --agent mybot", "Recreate agent containers."],
+    ["unmaskbot sandbox explain", "Explain effective sandbox config."],
   ],
   list: [
-    ["moltbot sandbox list", "List all sandbox containers."],
-    ["moltbot sandbox list --browser", "List only browser containers."],
-    ["moltbot sandbox list --json", "JSON output."],
+    ["unmaskbot sandbox list", "List all sandbox containers."],
+    ["unmaskbot sandbox list --browser", "List only browser containers."],
+    ["unmaskbot sandbox list --json", "JSON output."],
   ],
   recreate: [
-    ["moltbot sandbox recreate --all", "Recreate all containers."],
-    ["moltbot sandbox recreate --session main", "Recreate a specific session."],
-    ["moltbot sandbox recreate --agent mybot", "Recreate a specific agent (includes sub-agents)."],
-    ["moltbot sandbox recreate --browser --all", "Recreate only browser containers."],
-    ["moltbot sandbox recreate --all --force", "Skip confirmation."],
+    ["unmaskbot sandbox recreate --all", "Recreate all containers."],
+    ["unmaskbot sandbox recreate --session main", "Recreate a specific session."],
+    [
+      "unmaskbot sandbox recreate --agent mybot",
+      "Recreate a specific agent (includes sub-agents).",
+    ],
+    ["unmaskbot sandbox recreate --browser --all", "Recreate only browser containers."],
+    ["unmaskbot sandbox recreate --all --force", "Skip confirmation."],
   ],
   explain: [
-    ["moltbot sandbox explain", "Show effective sandbox config."],
-    ["moltbot sandbox explain --session agent:main:main", "Explain a specific session."],
-    ["moltbot sandbox explain --agent work", "Explain an agent sandbox."],
-    ["moltbot sandbox explain --json", "JSON output."],
+    ["unmaskbot sandbox explain", "Show effective sandbox config."],
+    ["unmaskbot sandbox explain --session agent:main:main", "Explain a specific session."],
+    ["unmaskbot sandbox explain --agent work", "Explain an agent sandbox."],
+    ["unmaskbot sandbox explain --json", "JSON output."],
   ],
 } as const;
 
@@ -68,7 +71,7 @@ export function registerSandboxCli(program: Command) {
     .addHelpText(
       "after",
       () =>
-        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/sandbox", "docs.molt.bot/cli/sandbox")}\n`,
+        `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/sandbox", "docs.unmask.ai/cli/sandbox")}\n`,
     )
     .action(() => {
       sandbox.help({ error: true });

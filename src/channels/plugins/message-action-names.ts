@@ -14,6 +14,7 @@ export const CHANNEL_MESSAGE_ACTION_NAMES = [
   "addParticipant",
   "removeParticipant",
   "leaveGroup",
+  "group-create",
   "sendAttachment",
   "delete",
   "pin",

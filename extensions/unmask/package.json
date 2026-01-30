@@ -1,0 +1,11 @@
+{
+  "name": "@tryunmask/unmask",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Unmask tools and routing helpers for Moltbot",
+  "moltbot": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

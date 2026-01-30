@@ -336,6 +336,8 @@ export async function monitorWebInbox(options: {
     sock: {
       sendMessage: (jid: string, content: AnyMessageContent) => sock.sendMessage(jid, content),
       sendPresenceUpdate: (presence, jid?: string) => sock.sendPresenceUpdate(presence, jid),
+      createGroup: (subject: string, participants: string[]) =>
+        sock.createGroup(subject, participants),
     },
     defaultAccountId: options.accountId,
   });

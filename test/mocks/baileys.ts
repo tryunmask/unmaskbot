@@ -7,6 +7,7 @@ export type MockBaileysSocket = {
   ws: { close: ReturnType<typeof vi.fn> };
   sendPresenceUpdate: ReturnType<typeof vi.fn>;
   sendMessage: ReturnType<typeof vi.fn>;
+  createGroup: ReturnType<typeof vi.fn>;
   readMessages: ReturnType<typeof vi.fn>;
   user?: { id?: string };
 };
@@ -34,6 +35,7 @@ export function createMockBaileys(): {
       ws: { close: vi.fn() },
       sendPresenceUpdate: vi.fn().mockResolvedValue(undefined),
       sendMessage: vi.fn().mockResolvedValue({ key: { id: "msg123" } }),
+      createGroup: vi.fn().mockResolvedValue({ status: 200, gid: "12345@g.us" }),
       readMessages: vi.fn().mockResolvedValue(undefined),
       user: { id: "123@s.whatsapp.net" },
     };

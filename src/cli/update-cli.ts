@@ -81,46 +81,33 @@ const STEP_LABELS: Record<string, string> = {
   "deps install": "Installing dependencies",
   build: "Building",
   "ui:build": "Building UI",
-  "moltbot doctor": "Running doctor checks",
+  "unmaskbot doctor": "Running doctor checks",
   "git rev-parse HEAD (after)": "Verifying update",
   "global update": "Updating via package manager",
   "global install": "Installing global package",
 };
 
 const UPDATE_QUIPS = [
-  "Leveled up! New skills unlocked. You're welcome.",
-  "Fresh code, same lobster. Miss me?",
-  "Back and better. Did you even notice I was gone?",
-  "Update complete. I learned some new tricks while I was out.",
-  "Upgraded! Now with 23% more sass.",
-  "I've evolved. Try to keep up.",
-  "New version, who dis? Oh right, still me but shinier.",
-  "Patched, polished, and ready to pinch. Let's go.",
-  "The lobster has molted. Harder shell, sharper claws.",
-  "Update done! Check the changelog or just trust me, it's good.",
-  "Reborn from the boiling waters of npm. Stronger now.",
-  "I went away and came back smarter. You should try it sometime.",
-  "Update complete. The bugs feared me, so they left.",
-  "New version installed. Old version sends its regards.",
-  "Firmware fresh. Brain wrinkles: increased.",
-  "I've seen things you wouldn't believe. Anyway, I'm updated.",
-  "Back online. The changelog is long but our friendship is longer.",
-  "Upgraded! Peter fixed stuff. Blame him if it breaks.",
-  "Molting complete. Please don't look at my soft shell phase.",
-  "Version bump! Same chaos energy, fewer crashes (probably).",
+  "Update complete. You're good to go.",
+  "New version installed. Restart when ready.",
+  "Fresh build, same focus.",
+  "Upgrade done. Keep shipping.",
+  "Patched and ready.",
+  "Updated. Onward.",
 ];
 
 const MAX_LOG_CHARS = 8000;
-const DEFAULT_PACKAGE_NAME = "moltbot";
+const DEFAULT_PACKAGE_NAME = "unmaskbot";
 const CORE_PACKAGE_NAMES = new Set([DEFAULT_PACKAGE_NAME, "moltbot"]);
 const CLI_NAME = resolveCliName();
-const CLAWDBOT_REPO_URL = "https://github.com/moltbot/moltbot.git";
-const DEFAULT_GIT_DIR = path.join(os.homedir(), "moltbot");
+const CLAWDBOT_REPO_URL = "https://github.com/tryunmask/unmaskbot.git";
+const DEFAULT_GIT_DIR = path.join(os.homedir(), "unmaskbot");
 
 function normalizeTag(value?: string | null): string | null {
   if (!value) return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
+  if (trimmed.startsWith("unmaskbot@")) return trimmed.slice("unmaskbot@".length);
   if (trimmed.startsWith("moltbot@")) return trimmed.slice("moltbot@".length);
   if (trimmed.startsWith(`${DEFAULT_PACKAGE_NAME}@`)) {
     return trimmed.slice(`${DEFAULT_PACKAGE_NAME}@`.length);
@@ -200,7 +187,7 @@ async function isEmptyDir(targetPath: string): Promise<boolean> {
 }
 
 function resolveGitInstallDir(): string {
-  const override = process.env.CLAWDBOT_GIT_DIR?.trim();
+  const override = process.env.UNMASKBOT_GIT_DIR?.trim() || process.env.CLAWDBOT_GIT_DIR?.trim();
   if (override) return path.resolve(override);
   return DEFAULT_GIT_DIR;
 }
@@ -271,7 +258,7 @@ async function ensureGitCheckout(params: {
     const empty = await isEmptyDir(params.dir);
     if (!empty) {
       throw new Error(
-        `CLAWDBOT_GIT_DIR points at a non-git directory: ${params.dir}. Set CLAWDBOT_GIT_DIR to an empty folder or a moltbot checkout.`,
+        `UNMASKBOT_GIT_DIR points at a non-git directory: ${params.dir}. Set UNMASKBOT_GIT_DIR to an empty folder or an unmaskbot checkout.`,
       );
     }
     return await runUpdateStep({
@@ -411,7 +398,7 @@ export async function updateStatusCommand(opts: UpdateStatusOptions): Promise<vo
     },
   ];
 
-  defaultRuntime.log(theme.heading("Moltbot update status"));
+  defaultRuntime.log(theme.heading("Unmaskbot update status"));
   defaultRuntime.log("");
   defaultRuntime.log(
     renderTable({
@@ -685,7 +672,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
   const showProgress = !opts.json && process.stdout.isTTY;
 
   if (!opts.json) {
-    defaultRuntime.log(theme.heading("Updating Moltbot..."));
+    defaultRuntime.log(theme.heading("Updating Unmaskbot..."));
     defaultRuntime.log("");
   }
 
@@ -823,12 +810,12 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     if (result.reason === "not-git-install") {
       defaultRuntime.log(
         theme.warn(
-          `Skipped: this Moltbot install isn't a git checkout, and the package manager couldn't be detected. Update via your package manager, then run \`${replaceCliName(formatCliCommand("moltbot doctor"), CLI_NAME)}\` and \`${replaceCliName(formatCliCommand("moltbot gateway restart"), CLI_NAME)}\`.`,
+          `Skipped: this Unmaskbot install isn't a git checkout, and the package manager couldn't be detected. Update via your package manager, then run \`${replaceCliName(formatCliCommand("unmaskbot doctor"), CLI_NAME)}\` and \`${replaceCliName(formatCliCommand("unmaskbot gateway restart"), CLI_NAME)}\`.`,
         ),
       );
       defaultRuntime.log(
         theme.muted(
-          `Examples: \`${replaceCliName("npm i -g moltbot@latest", CLI_NAME)}\` or \`${replaceCliName("pnpm add -g moltbot@latest", CLI_NAME)}\``,
+          `Examples: \`${replaceCliName("npm i -g unmaskbot@latest", CLI_NAME)}\` or \`${replaceCliName("pnpm add -g unmaskbot@latest", CLI_NAME)}\``,
         ),
       );
     }
@@ -945,7 +932,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
         defaultRuntime.log(theme.warn(`Daemon restart failed: ${String(err)}`));
         defaultRuntime.log(
           theme.muted(
-            `You may need to restart the service manually: ${replaceCliName(formatCliCommand("moltbot gateway restart"), CLI_NAME)}`,
+            `You may need to restart the service manually: ${replaceCliName(formatCliCommand("unmaskbot gateway restart"), CLI_NAME)}`,
           ),
         );
       }
@@ -955,13 +942,13 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
     if (result.mode === "npm" || result.mode === "pnpm") {
       defaultRuntime.log(
         theme.muted(
-          `Tip: Run \`${replaceCliName(formatCliCommand("moltbot doctor"), CLI_NAME)}\`, then \`${replaceCliName(formatCliCommand("moltbot gateway restart"), CLI_NAME)}\` to apply updates to a running gateway.`,
+          `Tip: Run \`${replaceCliName(formatCliCommand("unmaskbot doctor"), CLI_NAME)}\`, then \`${replaceCliName(formatCliCommand("unmaskbot gateway restart"), CLI_NAME)}\` to apply updates to a running gateway.`,
         ),
       );
     } else {
       defaultRuntime.log(
         theme.muted(
-          `Tip: Run \`${replaceCliName(formatCliCommand("moltbot gateway restart"), CLI_NAME)}\` to apply updates to a running gateway.`,
+          `Tip: Run \`${replaceCliName(formatCliCommand("unmaskbot gateway restart"), CLI_NAME)}\` to apply updates to a running gateway.`,
         ),
       );
     }
@@ -975,7 +962,7 @@ export async function updateCommand(opts: UpdateCommandOptions): Promise<void> {
 export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promise<void> {
   if (!process.stdin.isTTY) {
     defaultRuntime.error(
-      "Update wizard requires a TTY. Use `moltbot update --channel <stable|beta|dev>` instead.",
+      "Update wizard requires a TTY. Use `unmaskbot update --channel <stable|beta|dev>` instead.",
     );
     defaultRuntime.exit(1);
     return;
@@ -1066,7 +1053,7 @@ export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promi
         const empty = await isEmptyDir(gitDir);
         if (!empty) {
           defaultRuntime.error(
-            `CLAWDBOT_GIT_DIR points at a non-git directory: ${gitDir}. Set CLAWDBOT_GIT_DIR to an empty folder or a moltbot checkout.`,
+            `UNMASKBOT_GIT_DIR points at a non-git directory: ${gitDir}. Set UNMASKBOT_GIT_DIR to an empty folder or an unmaskbot checkout.`,
           );
           defaultRuntime.exit(1);
           return;
@@ -1111,7 +1098,7 @@ export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promi
 export function registerUpdateCli(program: Command) {
   const update = program
     .command("update")
-    .description("Update Moltbot to the latest version")
+    .description("Update Unmaskbot to the latest version")
     .option("--json", "Output result as JSON", false)
     .option("--no-restart", "Skip restarting the gateway service after a successful update")
     .option("--channel <stable|beta|dev>", "Persist update channel (git + npm)")
@@ -1120,15 +1107,15 @@ export function registerUpdateCli(program: Command) {
     .option("--yes", "Skip confirmation prompts (non-interactive)", false)
     .addHelpText("after", () => {
       const examples = [
-        ["moltbot update", "Update a source checkout (git)"],
-        ["moltbot update --channel beta", "Switch to beta channel (git + npm)"],
-        ["moltbot update --channel dev", "Switch to dev channel (git + npm)"],
-        ["moltbot update --tag beta", "One-off update to a dist-tag or version"],
-        ["moltbot update --no-restart", "Update without restarting the service"],
-        ["moltbot update --json", "Output result as JSON"],
-        ["moltbot update --yes", "Non-interactive (accept downgrade prompts)"],
-        ["moltbot update wizard", "Interactive update wizard"],
-        ["moltbot --update", "Shorthand for moltbot update"],
+        ["unmaskbot update", "Update a source checkout (git)"],
+        ["unmaskbot update --channel beta", "Switch to beta channel (git + npm)"],
+        ["unmaskbot update --channel dev", "Switch to dev channel (git + npm)"],
+        ["unmaskbot update --tag beta", "One-off update to a dist-tag or version"],
+        ["unmaskbot update --no-restart", "Update without restarting the service"],
+        ["unmaskbot update --json", "Output result as JSON"],
+        ["unmaskbot update --yes", "Non-interactive (accept downgrade prompts)"],
+        ["unmaskbot update wizard", "Interactive update wizard"],
+        ["unmaskbot --update", "Shorthand for unmaskbot update"],
       ] as const;
       const fmtExamples = examples
         .map(([cmd, desc]) => `  ${theme.command(cmd)} ${theme.muted(`# ${desc}`)}`)
@@ -1140,7 +1127,7 @@ ${theme.heading("What this does:")}
 
 ${theme.heading("Switch channels:")}
   - Use --channel stable|beta|dev to persist the update channel in config
-  - Run moltbot update status to see the active channel and source
+  - Run unmaskbot update status to see the active channel and source
   - Use --tag <dist-tag|version> for a one-off npm update without persisting
 
 ${theme.heading("Non-interactive:")}
@@ -1156,7 +1143,7 @@ ${theme.heading("Notes:")}
   - Downgrades require confirmation (can break configuration)
   - Skips update if the working directory has uncommitted changes
 
-${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.molt.bot/cli/update")}`;
+${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.unmask.ai/cli/update")}`;
     })
     .action(async (opts) => {
       try {
@@ -1180,7 +1167,7 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.molt.bot/cli/updat
     .option("--timeout <seconds>", "Timeout for each update step in seconds (default: 1200)")
     .addHelpText(
       "after",
-      `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.molt.bot/cli/update")}\n`,
+      `\n${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.unmask.ai/cli/update")}\n`,
     )
     .action(async (opts) => {
       try {
@@ -1200,14 +1187,14 @@ ${theme.muted("Docs:")} ${formatDocsLink("/cli/update", "docs.molt.bot/cli/updat
       "after",
       () =>
         `\n${theme.heading("Examples:")}\n${formatHelpExamples([
-          ["moltbot update status", "Show channel + version status."],
-          ["moltbot update status --json", "JSON output."],
-          ["moltbot update status --timeout 10", "Custom timeout."],
+          ["unmaskbot update status", "Show channel + version status."],
+          ["unmaskbot update status --json", "JSON output."],
+          ["unmaskbot update status --timeout 10", "Custom timeout."],
         ])}\n\n${theme.heading("Notes:")}\n${theme.muted(
           "- Shows current update channel (stable/beta/dev) and source",
         )}\n${theme.muted("- Includes git tag/branch/SHA for source checkouts")}\n\n${theme.muted(
           "Docs:",
-        )} ${formatDocsLink("/cli/update", "docs.molt.bot/cli/update")}`,
+        )} ${formatDocsLink("/cli/update", "docs.unmask.ai/cli/update")}`,
     )
     .action(async (opts) => {
       try {

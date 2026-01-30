@@ -1,8 +1,14 @@
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 
 import type { MoltbotConfig } from "../../config/config.js";
-import { sendReactionWhatsApp } from "../../web/outbound.js";
-import { createActionGate, jsonResult, readReactionParams, readStringParam } from "./common.js";
+import { createGroupWhatsApp, sendReactionWhatsApp } from "../../web/outbound.js";
+import {
+  createActionGate,
+  jsonResult,
+  readReactionParams,
+  readStringArrayParam,
+  readStringParam,
+} from "./common.js";
 
 export async function handleWhatsAppAction(
   params: Record<string, unknown>,
@@ -35,6 +41,25 @@ export async function handleWhatsAppAction(
       return jsonResult({ ok: true, added: emoji });
     }
     return jsonResult({ ok: true, removed: true });
+  }
+
+  if (action === "group-create") {
+    if (!isActionEnabled("groupCreate")) {
+      throw new Error("WhatsApp group creation is disabled.");
+    }
+    const subject = readStringParam(params, "subject", {
+      required: true,
+      label: "Group subject",
+    });
+    const participants =
+      readStringArrayParam(params, "participants") ??
+      readStringArrayParam(params, "participant", { required: true, label: "Participants" });
+    const accountId = readStringParam(params, "accountId");
+    const result = await createGroupWhatsApp(subject, participants, {
+      verbose: false,
+      accountId: accountId ?? undefined,
+    });
+    return jsonResult({ ok: true, ...result });
   }
 
   throw new Error(`Unsupported WhatsApp action: ${action}`);

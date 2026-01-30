@@ -214,8 +214,8 @@ export async function finalizeOnboardingWizard(options: FinalizeOnboardingOption
       await prompter.note(
         [
           "Docs:",
-          "https://docs.molt.bot/gateway/health",
-          "https://docs.molt.bot/gateway/troubleshooting",
+          "https://docs.unmask.ai/gateway/health",
+          "https://docs.unmask.ai/gateway/troubleshooting",
         ].join("\n"),
         "Health check help",
       );

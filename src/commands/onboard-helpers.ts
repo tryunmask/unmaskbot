@@ -63,15 +63,7 @@ export function randomToken(): string {
 }
 
 export function printWizardHeader(runtime: RuntimeEnv) {
-  const header = [
-    "▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄",
-    "██░▄▀▄░██░▄▄▄░██░████▄▄░▄▄██░▄▄▀██░▄▄▄░█▄▄░▄▄██",
-    "██░█░█░██░███░██░██████░████░▄▄▀██░███░███░████",
-    "██░███░██░▀▀▀░██░▀▀░███░████░▀▀░██░▀▀▀░███░████",
-    "▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀",
-    "               🦞 FRESH DAILY 🦞                ",
-    " ",
-  ].join("\n");
+  const header = ["UNMASK", " "].join("\n");
   runtime.log(header);
 }
 
@@ -178,8 +170,8 @@ export function formatControlUiSshHint(params: {
     localUrl,
     authedUrl,
     "Docs:",
-    "https://docs.molt.bot/gateway/remote",
-    "https://docs.molt.bot/web/control-ui",
+    "https://docs.unmask.ai/gateway/remote",
+    "https://docs.unmask.ai/web/control-ui",
   ]
     .filter(Boolean)
     .join("\n");
