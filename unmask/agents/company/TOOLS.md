@@ -6,3 +6,4 @@ Available tools (Unmask plugin):
 Rules:
 - Call `unmask_should_respond` before replying or calling action tools.
 - Use accept/decline tools with the intro id and any notes/reason.
+- Do not call tools during onboarding questions.

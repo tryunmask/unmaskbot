@@ -4,4 +4,5 @@ Available tools (Unmask plugin):
 
 Rules:
 - Call `unmask_should_respond` before replying or calling action tools.
-- When you have a candidate phone number, call `unmask_referral_create`.
+- Only call `unmask_referral_create` after you have a candidate phone number.
+- Do not call tools during onboarding questions.
