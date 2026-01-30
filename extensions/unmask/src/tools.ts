@@ -71,6 +71,16 @@ function buildUrl(baseUrl: string, path: string): string {
   }
 }
 
+function resolveScoutPhone(sessionKey?: string): string | null {
+  const key = sessionKey?.trim();
+  if (!key) return null;
+  const match = key.match(/(?:^|:)whatsapp:dm:([^:]+)$/i);
+  if (!match) return null;
+  const candidate = match[1]?.trim();
+  if (!candidate || !candidate.startsWith("+")) return null;
+  return candidate;
+}
+
 async function parseJsonOrText(res: Response): Promise<unknown> {
   const text = await res.text();
   if (!text) return null;
@@ -160,7 +170,8 @@ function fallbackShouldRespond(params: {
   return { shouldRespond: true, reason: "default allow", source: "fallback" };
 }
 
-export function createUnmaskTools(api: MoltbotPluginApi, _ctx: MoltbotPluginToolContext) {
+export function createUnmaskTools(api: MoltbotPluginApi, ctx: MoltbotPluginToolContext) {
+  const scoutPhoneFromSession = resolveScoutPhone(ctx.sessionKey);
   return [
     {
       name: "unmask_should_respond",
@@ -224,16 +235,22 @@ export function createUnmaskTools(api: MoltbotPluginApi, _ctx: MoltbotPluginTool
       parameters: Type.Object({
         phone: Type.String(),
         name: Type.Optional(Type.String()),
+        linkedin: Type.Optional(Type.String()),
         notes: Type.Optional(Type.String()),
         scoutPhone: Type.Optional(Type.String()),
         source: Type.Optional(Type.String()),
       }),
       async execute(_id: string, params: Record<string, unknown>) {
+        const scoutPhone =
+          typeof params.scoutPhone === "string" && params.scoutPhone.trim()
+            ? params.scoutPhone
+            : scoutPhoneFromSession ?? undefined;
         const response = await callUnmaskApi(api, "createReferral", {
           phone: params.phone,
           name: params.name,
+          linkedin: params.linkedin,
           notes: params.notes,
-          scoutPhone: params.scoutPhone,
+          scoutPhone,
           source: params.source,
         });
         return {
@@ -250,17 +267,23 @@ export function createUnmaskTools(api: MoltbotPluginApi, _ctx: MoltbotPluginTool
         fullName: Type.Optional(Type.String()),
         role: Type.Optional(Type.String()),
         location: Type.Optional(Type.String()),
+        linkedin: Type.Optional(Type.String()),
         notes: Type.Optional(Type.String()),
         scoutPhone: Type.Optional(Type.String()),
       }),
       async execute(_id: string, params: Record<string, unknown>) {
+        const scoutPhone =
+          typeof params.scoutPhone === "string" && params.scoutPhone.trim()
+            ? params.scoutPhone
+            : scoutPhoneFromSession ?? undefined;
         const response = await callUnmaskApi(api, "onboardTalent", {
           phone: params.phone,
           fullName: params.fullName,
           role: params.role,
           location: params.location,
+          linkedin: params.linkedin,
           notes: params.notes,
-          scoutPhone: params.scoutPhone,
+          scoutPhone,
         });
         return {
           content: [{ type: "text", text: buildResultText("talent", response) }],
