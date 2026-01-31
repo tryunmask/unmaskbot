@@ -4,10 +4,11 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  resolveDefaultConfigCandidates,
   resolveConfigPath,
+  resolveDefaultConfigCandidates,
   resolveOAuthDir,
   resolveOAuthPath,
+  resolveRepoStateDirCandidate,
   resolveStateDir,
 } from "./paths.js";
 
@@ -24,43 +25,50 @@ describe("oauth paths", () => {
     );
   });
 
-  it("derives oauth path from CLAWDBOT_STATE_DIR when unset", () => {
-    const env = {
-      CLAWDBOT_STATE_DIR: "/custom/state",
-    } as NodeJS.ProcessEnv;
-
-    expect(resolveOAuthDir(env, "/custom/state")).toBe(path.join("/custom/state", "credentials"));
-    expect(resolveOAuthPath(env, "/custom/state")).toBe(
+  it("derives oauth path from stateDir when unset", () => {
+    expect(resolveOAuthDir({} as NodeJS.ProcessEnv, "/custom/state")).toBe(
+      path.join("/custom/state", "credentials"),
+    );
+    expect(resolveOAuthPath({} as NodeJS.ProcessEnv, "/custom/state")).toBe(
       path.join("/custom/state", "credentials", "oauth.json"),
     );
   });
 });
 
 describe("state + config path candidates", () => {
-  it("prefers MOLTBOT_STATE_DIR over legacy state dir env", () => {
+  it("prefers UNMASKBOT_STATE_DIR over MOLTBOT_STATE_DIR", () => {
     const env = {
-      MOLTBOT_STATE_DIR: "/new/state",
-      CLAWDBOT_STATE_DIR: "/legacy/state",
+      UNMASKBOT_STATE_DIR: "/new/state",
+      MOLTBOT_STATE_DIR: "/legacy/state",
     } as NodeJS.ProcessEnv;
 
     expect(resolveStateDir(env, () => "/home/test")).toBe(path.resolve("/new/state"));
   });
 
-  it("orders default config candidates as new then legacy", () => {
-    const home = "/home/test";
-    const candidates = resolveDefaultConfigCandidates({} as NodeJS.ProcessEnv, () => home);
-    expect(candidates[0]).toBe(path.join(home, ".moltbot", "moltbot.json"));
-    expect(candidates[1]).toBe(path.join(home, ".moltbot", "clawdbot.json"));
-    expect(candidates[2]).toBe(path.join(home, ".clawdbot", "moltbot.json"));
-    expect(candidates[3]).toBe(path.join(home, ".clawdbot", "clawdbot.json"));
+  it("prefers repo-local .unmask/unmask.json when present", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "unmask-repo-config-"));
+    const prev = process.cwd();
+    try {
+      await fs.mkdir(path.join(root, ".git"), { recursive: true });
+      await fs.mkdir(path.join(root, ".unmask"), { recursive: true });
+      await fs.writeFile(path.join(root, ".unmask", "unmask.json"), "{}", "utf-8");
+
+      process.chdir(root);
+      const candidates = resolveDefaultConfigCandidates({} as NodeJS.ProcessEnv, () => "/home/test");
+      expect(candidates[0]).toBe(path.join(root, ".unmask", "unmask.json"));
+    } finally {
+      process.chdir(prev);
+      await fs.rm(root, { recursive: true, force: true });
+    }
   });
 
-  it("prefers ~/.moltbot when it exists and legacy dir is missing", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "moltbot-state-"));
+  it("prefers ~/.unmaskbot when it exists and ~/.moltbot is missing", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "unmaskbot-state-"));
     try {
-      const newDir = path.join(root, ".moltbot");
+      const newDir = path.join(root, ".unmaskbot");
       await fs.mkdir(newDir, { recursive: true });
-      const resolved = resolveStateDir({} as NodeJS.ProcessEnv, () => root);
+      // Avoid picking up the real repo during tests.
+      const resolved = resolveStateDir({} as NodeJS.ProcessEnv, () => root, () => root);
       expect(resolved).toBe(newDir);
     } finally {
       await fs.rm(root, { recursive: true, force: true });
@@ -68,19 +76,19 @@ describe("state + config path candidates", () => {
   });
 
   it("CONFIG_PATH prefers existing legacy filename when present", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "moltbot-config-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "unmask-config-"));
     const previousHome = process.env.HOME;
     const previousUserProfile = process.env.USERPROFILE;
     const previousHomeDrive = process.env.HOMEDRIVE;
     const previousHomePath = process.env.HOMEPATH;
     const previousMoltbotConfig = process.env.MOLTBOT_CONFIG_PATH;
-    const previousClawdbotConfig = process.env.CLAWDBOT_CONFIG_PATH;
+    const previousUnmaskbotConfig = process.env.UNMASKBOT_CONFIG_PATH;
     const previousMoltbotState = process.env.MOLTBOT_STATE_DIR;
-    const previousClawdbotState = process.env.CLAWDBOT_STATE_DIR;
+    const previousUnmaskbotState = process.env.UNMASKBOT_STATE_DIR;
     try {
-      const legacyDir = path.join(root, ".clawdbot");
+      const legacyDir = path.join(root, ".moltbot");
       await fs.mkdir(legacyDir, { recursive: true });
-      const legacyPath = path.join(legacyDir, "clawdbot.json");
+      const legacyPath = path.join(legacyDir, "moltbot.json");
       await fs.writeFile(legacyPath, "{}", "utf-8");
 
       process.env.HOME = root;
@@ -91,19 +99,16 @@ describe("state + config path candidates", () => {
         process.env.HOMEPATH = root.slice(parsed.root.length - 1);
       }
       delete process.env.MOLTBOT_CONFIG_PATH;
-      delete process.env.CLAWDBOT_CONFIG_PATH;
+      delete process.env.UNMASKBOT_CONFIG_PATH;
       delete process.env.MOLTBOT_STATE_DIR;
-      delete process.env.CLAWDBOT_STATE_DIR;
+      delete process.env.UNMASKBOT_STATE_DIR;
 
       vi.resetModules();
       const { CONFIG_PATH } = await import("./paths.js");
       expect(CONFIG_PATH).toBe(legacyPath);
     } finally {
-      if (previousHome === undefined) {
-        delete process.env.HOME;
-      } else {
-        process.env.HOME = previousHome;
-      }
+      if (previousHome === undefined) delete process.env.HOME;
+      else process.env.HOME = previousHome;
       if (previousUserProfile === undefined) delete process.env.USERPROFILE;
       else process.env.USERPROFILE = previousUserProfile;
       if (previousHomeDrive === undefined) delete process.env.HOMEDRIVE;
@@ -112,21 +117,21 @@ describe("state + config path candidates", () => {
       else process.env.HOMEPATH = previousHomePath;
       if (previousMoltbotConfig === undefined) delete process.env.MOLTBOT_CONFIG_PATH;
       else process.env.MOLTBOT_CONFIG_PATH = previousMoltbotConfig;
-      if (previousClawdbotConfig === undefined) delete process.env.CLAWDBOT_CONFIG_PATH;
-      else process.env.CLAWDBOT_CONFIG_PATH = previousClawdbotConfig;
+      if (previousUnmaskbotConfig === undefined) delete process.env.UNMASKBOT_CONFIG_PATH;
+      else process.env.UNMASKBOT_CONFIG_PATH = previousUnmaskbotConfig;
       if (previousMoltbotState === undefined) delete process.env.MOLTBOT_STATE_DIR;
       else process.env.MOLTBOT_STATE_DIR = previousMoltbotState;
-      if (previousClawdbotState === undefined) delete process.env.CLAWDBOT_STATE_DIR;
-      else process.env.CLAWDBOT_STATE_DIR = previousClawdbotState;
+      if (previousUnmaskbotState === undefined) delete process.env.UNMASKBOT_STATE_DIR;
+      else process.env.UNMASKBOT_STATE_DIR = previousUnmaskbotState;
       await fs.rm(root, { recursive: true, force: true });
       vi.resetModules();
     }
   });
 
   it("respects state dir overrides when config is missing", async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "moltbot-config-override-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "unmask-config-override-"));
     try {
-      const legacyDir = path.join(root, ".clawdbot");
+      const legacyDir = path.join(root, ".moltbot");
       await fs.mkdir(legacyDir, { recursive: true });
       const legacyConfig = path.join(legacyDir, "moltbot.json");
       await fs.writeFile(legacyConfig, "{}", "utf-8");
@@ -134,8 +139,25 @@ describe("state + config path candidates", () => {
       const overrideDir = path.join(root, "override");
       const env = { MOLTBOT_STATE_DIR: overrideDir } as NodeJS.ProcessEnv;
       const resolved = resolveConfigPath(env, overrideDir, () => root);
-      expect(resolved).toBe(path.join(overrideDir, "moltbot.json"));
+      expect(resolved).toBe(path.join(overrideDir, "unmaskbot.json"));
     } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("repo-local state dir candidate", () => {
+  it("resolves <repo>/.unmask when the repo has opted in", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "unmask-repo-state-"));
+    const prev = process.cwd();
+    try {
+      await fs.mkdir(path.join(root, ".git"), { recursive: true });
+      await fs.mkdir(path.join(root, ".unmask"), { recursive: true });
+      process.chdir(root);
+      const resolved = resolveRepoStateDirCandidate({} as NodeJS.ProcessEnv);
+      expect(resolved).toBe(path.join(root, ".unmask"));
+    } finally {
+      process.chdir(prev);
       await fs.rm(root, { recursive: true, force: true });
     }
   });
