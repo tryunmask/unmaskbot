@@ -713,6 +713,37 @@ Notes:
 - Group DMs (Discord/Slack) are still controlled by `dm.groupEnabled` + `dm.groupChannels`.
 - Default is `groupPolicy: "allowlist"` (unless overridden by `channels.defaults.groupPolicy`); if no allowlist is configured, group messages are blocked.
 
+### Shared allowlist (across channels)
+
+If you have one “user linking” system and want a single allowlist that applies across multiple channels, you can set:
+
+- `channels.defaults.allowFrom`
+
+This list is merged into each channel’s own allowlist, but **only provider-prefixed entries are used** (to avoid accidental cross-channel matches).
+
+Supported prefixes:
+- WhatsApp: `whatsapp:+15551234567` (also accepts `wa:+15551234567`)
+- Telegram: `telegram:123456789` (also accepts `tg:123456789`)
+- Slack: `slack:U0123ABC` (also accepts `user:U0123ABC`)
+- Discord: `discord:123456789012345678` (also accepts `user:123456789012345678`)
+
+Example:
+
+```json5
+{
+  channels: {
+    defaults: {
+      allowFrom: [
+        "whatsapp:+15551234567",
+        "telegram:123456789",
+        "slack:U0123ABC",
+        "discord:123456789012345678"
+      ]
+    }
+  }
+}
+```
+
 ### Multi-agent routing (`agents.list` + `bindings`)
 
 Run multiple isolated agents (separate workspace, `agentDir`, sessions) inside one Gateway.
