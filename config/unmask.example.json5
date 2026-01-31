@@ -27,12 +27,20 @@
         name: "Company Agent",
         workspace: "~/unmaskbot/unmask/agents/company",
         tools: { allow: ["unmask"] }
+      },
+      {
+        id: "intro",
+        name: "Intro Agent",
+        workspace: "~/unmaskbot/unmask/agents/intro",
+        tools: { allow: ["unmask"] }
       }
     ]
   },
   bindings: [
     { match: { channel: "whatsapp", accountId: "scout" }, agentId: "scout" },
     { match: { channel: "whatsapp", accountId: "talent" }, agentId: "talent" },
+    // Company: groups → intro agent, DMs → company agent
+    { match: { channel: "whatsapp", accountId: "company", peer: { kind: "group" } }, agentId: "intro" },
     { match: { channel: "whatsapp", accountId: "company" }, agentId: "company" },
 
     // Telegram: use 3 bot accounts so Scout/Talent/Company can each talk to the end user.

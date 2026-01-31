@@ -342,18 +342,19 @@ export async function monitorWebInbox(options: {
       sendMessage: (jid: string, content: AnyMessageContent) => sock.sendMessage(jid, content),
       sendPresenceUpdate: (presence, jid?: string) => sock.sendPresenceUpdate(presence, jid),
       createGroup: (subject: string, participants: string[]) => {
-        const createGroup = (
-          sock as {
-            createGroup?: (
+        // Baileys uses groupCreate (not createGroup)
+        const groupCreate = (
+          sock as unknown as {
+            groupCreate?: (
               subject: string,
               participants: string[],
             ) => Promise<WAGroupCreateResponse>;
           }
-        ).createGroup;
-        if (typeof createGroup !== "function") {
-          throw new Error("createGroup is not supported by this WhatsApp client");
+        ).groupCreate;
+        if (typeof groupCreate !== "function") {
+          throw new Error("groupCreate is not supported by this WhatsApp client");
         }
-        return createGroup(subject, participants);
+        return groupCreate(subject, participants);
       },
     },
     defaultAccountId: options.accountId,
