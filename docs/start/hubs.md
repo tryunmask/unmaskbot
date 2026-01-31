@@ -125,18 +125,8 @@ Use these hubs to discover every page, including deep dives and reference docs t
 ## Platforms
 
 - [Platforms overview](/platforms)
-- [macOS](/platforms/macos)
-- [iOS](/platforms/ios)
-- [Android](/platforms/android)
-- [Windows (WSL2)](/platforms/windows)
 - [Linux](/platforms/linux)
 - [Web surfaces](/web)
-
-## macOS companion app (advanced)
-
-- [macOS dev setup](/platforms/mac/dev-setup)
-- [macOS menu bar](/platforms/mac/menu-bar)
-- [macOS voice wake](/platforms/mac/voicewake)
 - [macOS voice overlay](/platforms/mac/voice-overlay)
 - [macOS WebChat](/platforms/mac/webchat)
 - [macOS Canvas](/platforms/mac/canvas)

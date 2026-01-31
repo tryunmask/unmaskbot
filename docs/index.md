@@ -12,7 +12,7 @@ read_when:
 </p>
 
 <p align="center">
-  <strong>Any OS + WhatsApp/Telegram/Discord/iMessage gateway for AI agents (Pi).</strong><br />
+  <strong>Headless WhatsApp/Telegram/Discord gateway for AI agents (Pi).</strong><br />
   Plugins add Mattermost and more.
   Send a message, get an agent response — from your pocket.
 </p>
@@ -24,7 +24,7 @@ read_when:
   <a href="/start/clawd">Moltbot assistant setup</a>
 </p>
 
-Moltbot bridges WhatsApp (via WhatsApp Web / Baileys), Telegram (Bot API / grammY), Discord (Bot API / channels.discord.js), and iMessage (imsg CLI) to coding agents like [Pi](https://github.com/badlogic/pi-mono). Plugins add Mattermost (Bot API + WebSocket) and more.
+Moltbot bridges WhatsApp (via WhatsApp Web / Baileys), Telegram (Bot API / grammY), and Discord (Bot API / channels.discord.js) to coding agents like [Pi](https://github.com/badlogic/pi-mono). Plugins add Mattermost (Bot API + WebSocket) and more.
 Moltbot also powers [Clawd](https://clawd.me), the space‑lobster assistant.
 
 ## Start here
@@ -54,13 +54,9 @@ WhatsApp / Telegram / Discord / iMessage (+ plugins)
   │                           │  http://<gateway-host>:18793
   │                           │    /__moltbot__/canvas/ (Canvas host)
   └───────────┬───────────────┘
-              │
-              ├─ Pi agent (RPC)
-              ├─ CLI (moltbot …)
-              ├─ Chat UI (SwiftUI)
-              ├─ macOS app (Moltbot.app)
-              ├─ iOS node via Gateway WS + pairing
-              └─ Android node via Gateway WS + pairing
+             │
+             ├─ Pi agent (RPC)
+             └─ CLI (moltbot …)
 ```
 
 Most operations flow through the **Gateway** (`moltbot gateway`), a single long-running process that owns channel connections and the WebSocket control plane.
@@ -81,7 +77,6 @@ Most operations flow through the **Gateway** (`moltbot gateway`), a single long-
 - ✈️ **Telegram Bot** — DMs + groups via grammY
 - 🎮 **Discord Bot** — DMs + guild channels via channels.discord.js
 - 🧩 **Mattermost Bot (plugin)** — Bot token + WebSocket events
-- 💬 **iMessage** — Local imsg CLI integration (macOS)
 - 🤖 **Agent bridge** — Pi (RPC mode) with tool streaming
 - ⏱️ **Streaming + chunking** — Block streaming + Telegram draft streaming details ([/concepts/streaming](/concepts/streaming))
 - 🧠 **Multi-agent routing** — Route provider accounts/peers to isolated agents (workspace + per-agent sessions)
@@ -90,9 +85,7 @@ Most operations flow through the **Gateway** (`moltbot gateway`), a single long-
 - 👥 **Group Chat Support** — Mention-based by default; owner can toggle `/activation always|mention`
 - 📎 **Media Support** — Send and receive images, audio, documents
 - 🎤 **Voice notes** — Optional transcription hook
-- 🖥️ **WebChat + macOS app** — Local UI + menu bar companion for ops and voice wake
-- 📱 **iOS node** — Pairs as a node and exposes a Canvas surface
-- 📱 **Android node** — Pairs as a node and exposes Canvas + Chat + Camera
+- 🖥️ **WebChat** — Local UI for chat and control
 
 Note: legacy Claude/Codex/Gemini/Opencode paths have been removed; Pi is the only coding-agent path.
 
@@ -198,12 +191,7 @@ Example:
   - [WhatsApp group messages](/concepts/group-messages)
   - [Media: images](/nodes/images)
   - [Media: audio](/nodes/audio)
-- Companion apps:
-  - [macOS app](/platforms/macos)
-  - [iOS app](/platforms/ios)
-  - [Android app](/platforms/android)
-  - [Windows (WSL2)](/platforms/windows)
-  - [Linux app](/platforms/linux)
+  - [Platforms](/platforms)
 - Ops and safety:
   - [Sessions](/concepts/session)
   - [Cron jobs](/automation/cron-jobs)
