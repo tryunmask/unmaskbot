@@ -30,6 +30,17 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_phone", ["phone"]),
+  companies: defineTable({
+    phone: v.string(),
+    name: v.optional(v.string()),
+    domain: v.optional(v.string()),
+    website: v.optional(v.string()),
+    summary: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    status: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_phone", ["phone"]),
   introRequests: defineTable({
     talentPhone: v.string(),
     companyId: v.optional(v.string()),
@@ -41,13 +52,16 @@ export default defineSchema({
     declineReason: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }),
+  })
+    .index("by_talentPhone", ["talentPhone"])
+    .index("by_companyPhone", ["companyPhone"]),
   outboundMessages: defineTable({
     toPhone: v.string(),
     message: v.string(),
     agentId: v.optional(v.string()),
     channel: v.optional(v.string()),
     accountId: v.optional(v.string()),
+    addToAllowlist: v.optional(v.boolean()),
     status: v.string(),
     attempts: v.number(),
     lastError: v.optional(v.string()),

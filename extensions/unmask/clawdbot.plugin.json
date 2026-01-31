@@ -24,9 +24,22 @@
           "shouldRespond": { "type": "string", "minLength": 1 },
           "createReferral": { "type": "string", "minLength": 1 },
           "onboardTalent": { "type": "string", "minLength": 1 },
+          "onboardCompany": { "type": "string", "minLength": 1 },
           "requestIntro": { "type": "string", "minLength": 1 },
           "acceptIntro": { "type": "string", "minLength": 1 },
-          "declineIntro": { "type": "string", "minLength": 1 }
+          "declineIntro": { "type": "string", "minLength": 1 },
+          "contextLookup": { "type": "string", "minLength": 1 }
+        }
+      },
+      "context": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "fakeData": { "type": "boolean" },
+          "cacheTtlMs": { "type": "number", "minimum": 0 },
+          "summaryMaxChars": { "type": "number", "minimum": 100 },
+          "timeoutMs": { "type": "number", "minimum": 1000 }
         }
       }
     },

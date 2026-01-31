@@ -73,13 +73,20 @@
         config: {
           apiBaseUrl: "https://api.unmask.example",
           apiToken: "REPLACE_ME",
+          context: {
+            enabled: true,
+            fakeData: true,
+            cacheTtlMs: 60000
+          },
           endpoints: {
             shouldRespond: "/v1/agents/should-respond",
             createReferral: "/v1/scout/referrals",
             onboardTalent: "/v1/talent/onboard",
+            onboardCompany: "/v1/company/onboard",
             requestIntro: "/v1/talent/intro-request",
             acceptIntro: "/v1/company/intro-accept",
-            declineIntro: "/v1/company/intro-decline"
+            declineIntro: "/v1/company/intro-decline",
+            contextLookup: "/v1/context/lookup"
           }
         }
       }

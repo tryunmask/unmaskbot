@@ -19,6 +19,7 @@ import { applyPluginAutoEnable } from "../config/plugin-auto-enable.js";
 import { clearAgentRunContext, onAgentEvent } from "../infra/agent-events.js";
 import { onHeartbeatEvent } from "../infra/heartbeat-events.js";
 import { startHeartbeatRunner } from "../infra/heartbeat-runner.js";
+import { startOutboundMessagePoller } from "../infra/outbound/outbound-message-poller.js";
 import { getMachineDisplayName } from "../infra/machine-name.js";
 import { ensureMoltbotCliOnPath } from "../infra/path-env.js";
 import {
@@ -407,6 +408,7 @@ export async function startGatewayServer(
   });
 
   let heartbeatRunner = startHeartbeatRunner({ cfg: cfgAtStart });
+  let outboundPoller = startOutboundMessagePoller({ cfg: cfgAtStart });
 
   void cron.start().catch((err) => logCron.error(`failed to start: ${String(err)}`));
 
@@ -511,12 +513,14 @@ export async function startGatewayServer(
     getState: () => ({
       hooksConfig,
       heartbeatRunner,
+      outboundPoller,
       cronState,
       browserControl,
     }),
     setState: (nextState) => {
       hooksConfig = nextState.hooksConfig;
       heartbeatRunner = nextState.heartbeatRunner;
+      outboundPoller = nextState.outboundPoller;
       cronState = nextState.cronState;
       cron = cronState.cron;
       cronStorePath = cronState.storePath;
@@ -553,6 +557,7 @@ export async function startGatewayServer(
     pluginServices,
     cron,
     heartbeatRunner,
+    outboundPoller,
     nodePresenceTimers,
     broadcast,
     tickInterval,

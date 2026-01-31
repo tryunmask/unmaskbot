@@ -8,6 +8,7 @@ import {
   readStringParam,
 } from "../../agents/tools/common.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
+import { normalizeTextForComparison } from "../../agents/pi-embedded-helpers.js";
 import { parseReplyDirectives } from "../../auto-reply/reply/reply-directives.js";
 import { dispatchChannelMessageAction } from "../../channels/plugins/message-actions.js";
 import type {
@@ -43,6 +44,33 @@ import { resolveChannelTarget, type ResolvedMessagingTarget } from "./target-res
 import { loadWebMedia } from "../../web/media.js";
 import { extensionForMime } from "../../media/mime.js";
 import { parseSlackTarget } from "../../slack/targets.js";
+import { createDedupeCache } from "../dedupe.js";
+
+const OUTBOUND_DEDUPE_TTL_MS = 2 * 60_000;
+const OUTBOUND_DEDUPE_MAX = 2000;
+const MIN_DEDUPE_TEXT_LENGTH = 10;
+const UNMASK_DEDUPE_AGENT_IDS = new Set(["scout", "talent", "company"]);
+const recentOutboundMessages = createDedupeCache({
+  ttlMs: OUTBOUND_DEDUPE_TTL_MS,
+  maxSize: OUTBOUND_DEDUPE_MAX,
+});
+
+function shouldDedupeOutbound(params: { agentId?: string; message: string }): boolean {
+  const agentId = params.agentId?.trim();
+  if (!agentId || !UNMASK_DEDUPE_AGENT_IDS.has(agentId)) return false;
+  const normalized = normalizeTextForComparison(params.message);
+  return normalized.length >= MIN_DEDUPE_TEXT_LENGTH;
+}
+
+function buildOutboundDedupeKey(params: {
+  agentId: string;
+  channel: ChannelId;
+  target: string;
+  message: string;
+}): string {
+  const normalized = normalizeTextForComparison(params.message);
+  return [params.agentId, params.channel, params.target, normalized].join("|");
+}
 
 export type MessageActionRunnerGateway = {
   url?: string;
@@ -667,6 +695,29 @@ async function handleSendAction(ctx: ResolvedActionContext): Promise<MessageActi
     message,
     preferEmbeds: true,
   });
+
+  if (!dryRun && agentId && shouldDedupeOutbound({ agentId, message })) {
+    const dedupeKey = buildOutboundDedupeKey({
+      agentId,
+      channel,
+      target: to,
+      message,
+    });
+    if (recentOutboundMessages.check(dedupeKey)) {
+      return {
+        kind: "send",
+        channel,
+        action,
+        to,
+        handledBy: "core",
+        payload: {
+          skipped: "duplicate",
+          message,
+        },
+        dryRun,
+      };
+    }
+  }
 
   const mediaUrl = readStringParam(params, "media", { trim: false });
   const gifPlayback = readBooleanParam(params, "gifPlayback") ?? false;

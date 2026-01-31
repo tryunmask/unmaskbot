@@ -74,3 +74,41 @@ export const decline = internalMutation({
     return { ok: true, status: "declined" };
   },
 });
+
+function pickLatestByTimestamp(
+  entries: Array<{ updatedAt?: number; createdAt?: number }>,
+): (typeof entries)[number] | null {
+  if (entries.length === 0) return null;
+  return entries.reduce((latest, entry) => {
+    if (!latest) return entry;
+    const latestTime = latest.updatedAt ?? latest.createdAt ?? 0;
+    const entryTime = entry.updatedAt ?? entry.createdAt ?? 0;
+    return entryTime >= latestTime ? entry : latest;
+  }, entries[0] ?? null);
+}
+
+export const findLatestByTalentPhone = internalQuery({
+  args: {
+    talentPhone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const entries = await ctx.db
+      .query("introRequests")
+      .withIndex("by_talentPhone", (q) => q.eq("talentPhone", args.talentPhone))
+      .collect();
+    return pickLatestByTimestamp(entries);
+  },
+});
+
+export const findLatestByCompanyPhone = internalQuery({
+  args: {
+    companyPhone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const entries = await ctx.db
+      .query("introRequests")
+      .withIndex("by_companyPhone", (q) => q.eq("companyPhone", args.companyPhone))
+      .collect();
+    return pickLatestByTimestamp(entries);
+  },
+});

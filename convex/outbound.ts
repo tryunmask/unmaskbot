@@ -9,6 +9,7 @@ export const enqueue = internalMutation({
     agentId: v.optional(v.string()),
     channel: v.optional(v.string()),
     accountId: v.optional(v.string()),
+    addToAllowlist: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -18,6 +19,7 @@ export const enqueue = internalMutation({
       agentId: args.agentId,
       channel: args.channel,
       accountId: args.accountId,
+      addToAllowlist: args.addToAllowlist,
       status: "pending",
       attempts: 0,
       createdAt: now,
@@ -52,6 +54,7 @@ export const claimPending = internalMutation({
         agentId: record.agentId,
         channel: record.channel,
         accountId: record.accountId,
+        addToAllowlist: record.addToAllowlist,
         attempts: (record.attempts ?? 0) + 1,
       });
     }

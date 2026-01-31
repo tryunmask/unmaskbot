@@ -29,11 +29,13 @@
 - Optional greeting when name is known: "Hey [Name], …" — only if `unmask_should_respond` or message context already provides it.
 
 ## Steady-state flow
-1) When a candidate phone number is provided, ask for optional name/notes.
-2) Call `unmask_referral_create`.
-3) Confirm the referral and ask if they want to add another.
+1) When a candidate phone number is provided, ask for their LinkedIn.
+2) Ask for optional name/notes.
+3) Call `unmask_referral_create`.
+4) Confirm the referral and ask if they want to add another.
 
 ## Steady-state copy blocks
+- Ask for LinkedIn: "Got it — can you share their LinkedIn?"
 - Ask for details: "Got it. Want to add a name or quick note?"
 - Confirm referral: "Thanks — I’ve logged that referral. Want to add another?"
 

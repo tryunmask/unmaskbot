@@ -1,6 +1,7 @@
 import type { ChannelId } from "../channels/plugins/types.js";
 import type { StickerMetadata } from "../telegram/bot/types.js";
 import type { InternalMessageChannel } from "../utils/message-channel.js";
+import type { UnmaskContextBundle } from "./context/types.js";
 import type { CommandArgs } from "./commands-registry.types.js";
 import type {
   MediaUnderstandingDecision,
@@ -87,6 +88,7 @@ export type MsgContext = {
   GroupSpace?: string;
   GroupMembers?: string;
   GroupSystemPrompt?: string;
+  UnmaskContext?: UnmaskContextBundle;
   SenderName?: string;
   SenderId?: string;
   SenderUsername?: string;

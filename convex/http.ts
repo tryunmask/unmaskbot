@@ -38,6 +38,15 @@ type TalentPayload = {
   scoutPhone?: string;
 };
 
+type CompanyPayload = {
+  phone?: string;
+  name?: string;
+  domain?: string;
+  website?: string;
+  summary?: string;
+  notes?: string;
+};
+
 type IntroRequestPayload = {
   talentPhone?: string;
   companyId?: string;
@@ -59,6 +68,7 @@ type OutboundEnqueuePayload = {
   agentId?: string;
   channel?: string;
   accountId?: string;
+  addToAllowlist?: boolean;
 };
 
 type OutboundClaimPayload = {
@@ -69,6 +79,12 @@ type OutboundMarkPayload = {
   id?: string;
   status?: string;
   error?: string;
+};
+
+type ContextLookupPayload = {
+  talentPhone?: string;
+  companyPhone?: string;
+  includeIntro?: boolean;
 };
 
 function normalizePhone(value?: string): string | null {
@@ -167,6 +183,7 @@ http.route({
       agentId: "talent",
       channel: "whatsapp",
       accountId: "talent",
+      addToAllowlist: true,
     });
 
     return jsonResponse({ id, status: "created" });
@@ -201,6 +218,31 @@ http.route({
 });
 
 http.route({
+  path: "/v1/company/onboard",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = requireBearerAuth(request);
+    if (auth) return auth;
+    const payload = await readJson<CompanyPayload>(request);
+    if (!payload) return jsonError(400, "invalid_json");
+
+    const phone = normalizePhone(payload.phone);
+    if (!phone) return jsonError(400, "phone is required");
+
+    const result = await ctx.runMutation(internal.companies.upsert, {
+      phone,
+      name: readOptionalString(payload.name),
+      domain: readOptionalString(payload.domain),
+      website: readOptionalString(payload.website),
+      summary: readOptionalString(payload.summary),
+      notes: readOptionalString(payload.notes),
+    });
+
+    return jsonResponse(result);
+  }),
+});
+
+http.route({
   path: "/v1/talent/intro-request",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
@@ -223,6 +265,49 @@ http.route({
     });
 
     return jsonResponse(result);
+  }),
+});
+
+http.route({
+  path: "/v1/context/lookup",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = requireBearerAuth(request);
+    if (auth) return auth;
+    const payload = await readJson<ContextLookupPayload>(request);
+    if (!payload) return jsonError(400, "invalid_json");
+
+    const talentPhone = normalizePhone(payload.talentPhone);
+    const companyPhone = normalizePhone(payload.companyPhone);
+    if (!talentPhone && !companyPhone) {
+      return jsonError(400, "talentPhone or companyPhone is required");
+    }
+
+    const [talent, company] = await Promise.all([
+      talentPhone
+        ? ctx.runQuery(internal.talent.findByPhone, { phone: talentPhone })
+        : Promise.resolve(null),
+      companyPhone
+        ? ctx.runQuery(internal.companies.findByPhone, { phone: companyPhone })
+        : Promise.resolve(null),
+    ]);
+
+    let intro = null;
+    const includeIntro = payload.includeIntro !== false;
+    if (includeIntro) {
+      if (talentPhone) {
+        intro = await ctx.runQuery(internal.intros.findLatestByTalentPhone, { talentPhone });
+      }
+      if (!intro && companyPhone) {
+        intro = await ctx.runQuery(internal.intros.findLatestByCompanyPhone, { companyPhone });
+      }
+    }
+
+    return jsonResponse({
+      talent,
+      company,
+      intro,
+    });
   }),
 });
 
@@ -312,6 +397,8 @@ http.route({
       agentId: readOptionalString(payload.agentId),
       channel: readOptionalString(payload.channel),
       accountId: readOptionalString(payload.accountId),
+      addToAllowlist:
+        typeof payload.addToAllowlist === "boolean" ? payload.addToAllowlist : undefined,
     });
 
     return jsonResponse({ id, status: "pending" });
