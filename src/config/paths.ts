@@ -16,21 +16,43 @@ export function resolveIsNixMode(env: NodeJS.ProcessEnv = process.env): boolean 
 
 export const isNixMode = resolveIsNixMode();
 
-const LEGACY_STATE_DIRNAME = ".moltbot";
-const NEW_STATE_DIRNAME = ".unmaskbot";
-const CONFIG_FILENAME = "unmaskbot.json";
-const LEGACY_CONFIG_FILENAME = "moltbot.json";
+const NEW_STATE_DIRNAME = ".unmask";
+const NEW_CONFIG_FILENAME = "unmask.json";
+const LEGACY_STATE_DIRNAMES = [".clawdbot", ".moltbot", ".unmaskbot"] as const;
+const LEGACY_CONFIG_FILENAMES = ["moltbot.json", "clawdbot.json", "unmaskbot.json"] as const;
+const REPO_CONFIG_DIRNAME = ".unmask";
 
-function legacyStateDir(homedir: () => string = os.homedir): string {
-  return path.join(homedir(), LEGACY_STATE_DIRNAME);
+function legacyStateDirs(homedir: () => string = os.homedir): string[] {
+  return LEGACY_STATE_DIRNAMES.map((name) => path.join(homedir(), name));
 }
 
 function newStateDir(homedir: () => string = os.homedir): string {
   return path.join(homedir(), NEW_STATE_DIRNAME);
 }
 
+function resolveRepoConfigCandidates(cwd: () => string = process.cwd): string[] {
+  const root = cwd();
+  const repoDir = path.join(root, REPO_CONFIG_DIRNAME);
+  return [
+    path.join(repoDir, NEW_CONFIG_FILENAME),
+    ...LEGACY_CONFIG_FILENAMES.map((name) => path.join(repoDir, name)),
+  ];
+}
+
+function firstExistingPath(candidates: string[]): string | undefined {
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) return candidate;
+    } catch {
+      // ignore invalid paths
+    }
+  }
+  return undefined;
+}
+
 export function resolveLegacyStateDir(homedir: () => string = os.homedir): string {
-  return legacyStateDir(homedir);
+  const candidates = legacyStateDirs(homedir);
+  return firstExistingPath(candidates) ?? candidates[0];
 }
 
 export function resolveNewStateDir(homedir: () => string = os.homedir): string {
@@ -39,22 +61,26 @@ export function resolveNewStateDir(homedir: () => string = os.homedir): string {
 
 /**
  * State directory for mutable data (sessions, logs, caches).
- * Can be overridden via UNMASKBOT_STATE_DIR (preferred) or MOLTBOT_STATE_DIR (legacy).
- * Default: ~/.unmaskbot (new default for Unmask)
- * If ~/.unmaskbot exists and ~/.moltbot does not, prefer ~/.unmaskbot.
+ * Can be overridden via UNMASKBOT_STATE_DIR (preferred) or MOLTBOT_STATE_DIR / CLAWDBOT_STATE_DIR (legacy).
+ * Default: ~/.unmask (new default for Unmask)
+ * If legacy dirs exist, prefer them to avoid splitting state.
  */
 export function resolveStateDir(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = os.homedir,
 ): string {
-  const override = env.UNMASKBOT_STATE_DIR?.trim() || env.MOLTBOT_STATE_DIR?.trim();
+  const override =
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.MOLTBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim();
   if (override) return resolveUserPath(override);
-  const legacyDir = legacyStateDir(homedir);
   const newDir = newStateDir(homedir);
-  const hasLegacy = fs.existsSync(legacyDir);
+  const legacyDirs = legacyStateDirs(homedir);
+  const hasLegacy = legacyDirs.some((dir) => fs.existsSync(dir));
   const hasNew = fs.existsSync(newDir);
   if (!hasLegacy && hasNew) return newDir;
-  return legacyDir;
+  if (hasLegacy) return firstExistingPath(legacyDirs) ?? legacyDirs[0];
+  return newDir;
 }
 
 function resolveUserPath(input: string): string {
@@ -71,16 +97,19 @@ export const STATE_DIR = resolveStateDir();
 
 /**
  * Config file path (JSON5).
- * Can be overridden via UNMASKBOT_CONFIG_PATH (preferred) or MOLTBOT_CONFIG_PATH (legacy).
- * Default: ~/.unmaskbot/unmaskbot.json (or $*_STATE_DIR/unmaskbot.json)
+ * Can be overridden via UNMASKBOT_CONFIG_PATH (preferred) or MOLTBOT_CONFIG_PATH / CLAWDBOT_CONFIG_PATH (legacy).
+ * Default: ~/.unmask/unmask.json (or $*_STATE_DIR/unmask.json)
  */
 export function resolveCanonicalConfigPath(
   env: NodeJS.ProcessEnv = process.env,
   stateDir: string = resolveStateDir(env, os.homedir),
 ): string {
-  const override = env.UNMASKBOT_CONFIG_PATH?.trim() || env.MOLTBOT_CONFIG_PATH?.trim();
+  const override =
+    env.UNMASKBOT_CONFIG_PATH?.trim() ||
+    env.MOLTBOT_CONFIG_PATH?.trim() ||
+    env.CLAWDBOT_CONFIG_PATH?.trim();
   if (override) return resolveUserPath(override);
-  return path.join(stateDir, CONFIG_FILENAME);
+  return path.join(stateDir, NEW_CONFIG_FILENAME);
 }
 
 /**
@@ -111,58 +140,73 @@ export function resolveConfigPath(
   stateDir: string = resolveStateDir(env, os.homedir),
   homedir: () => string = os.homedir,
 ): string {
-  const override = env.UNMASKBOT_CONFIG_PATH?.trim() || env.MOLTBOT_CONFIG_PATH?.trim();
+  const override =
+    env.UNMASKBOT_CONFIG_PATH?.trim() ||
+    env.MOLTBOT_CONFIG_PATH?.trim() ||
+    env.CLAWDBOT_CONFIG_PATH?.trim();
   if (override) return resolveUserPath(override);
-  const stateOverride = env.UNMASKBOT_STATE_DIR?.trim() || env.MOLTBOT_STATE_DIR?.trim();
+  const stateOverride =
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.MOLTBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim();
   const candidates = [
-    path.join(stateDir, CONFIG_FILENAME),
-    path.join(stateDir, LEGACY_CONFIG_FILENAME),
+    path.join(stateDir, NEW_CONFIG_FILENAME),
+    ...LEGACY_CONFIG_FILENAMES.map((name) => path.join(stateDir, name)),
   ];
-  const existing = candidates.find((candidate) => {
-    try {
-      return fs.existsSync(candidate);
-    } catch {
-      return false;
-    }
-  });
+  const existing = firstExistingPath(candidates);
   if (existing) return existing;
-  if (stateOverride) return path.join(stateDir, CONFIG_FILENAME);
+  if (stateOverride) return path.join(stateDir, NEW_CONFIG_FILENAME);
   const defaultStateDir = resolveStateDir(env, homedir);
   if (path.resolve(stateDir) === path.resolve(defaultStateDir)) {
     return resolveConfigPathCandidate(env, homedir);
   }
-  return path.join(stateDir, CONFIG_FILENAME);
+  return path.join(stateDir, NEW_CONFIG_FILENAME);
 }
 
 export const CONFIG_PATH = resolveConfigPathCandidate();
 
 /**
  * Resolve default config path candidates across new + legacy locations.
- * Order: explicit config path → state-dir-derived paths → new default → legacy default.
+ * Order: explicit config path → repo-local config → state-dir-derived paths → new default → legacy default.
  */
 export function resolveDefaultConfigCandidates(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = os.homedir,
 ): string[] {
-  const explicit = env.UNMASKBOT_CONFIG_PATH?.trim() || env.MOLTBOT_CONFIG_PATH?.trim();
+  const explicit =
+    env.UNMASKBOT_CONFIG_PATH?.trim() ||
+    env.MOLTBOT_CONFIG_PATH?.trim() ||
+    env.CLAWDBOT_CONFIG_PATH?.trim();
   if (explicit) return [resolveUserPath(explicit)];
 
   const candidates: string[] = [];
+  candidates.push(...resolveRepoConfigCandidates());
   const unmaskStateDir = env.UNMASKBOT_STATE_DIR?.trim();
   if (unmaskStateDir) {
-    candidates.push(path.join(resolveUserPath(unmaskStateDir), CONFIG_FILENAME));
-    candidates.push(path.join(resolveUserPath(unmaskStateDir), LEGACY_CONFIG_FILENAME));
+    candidates.push(path.join(resolveUserPath(unmaskStateDir), NEW_CONFIG_FILENAME));
+    for (const name of LEGACY_CONFIG_FILENAMES) {
+      candidates.push(path.join(resolveUserPath(unmaskStateDir), name));
+    }
   }
-  const legacyStateDirOverride = env.MOLTBOT_STATE_DIR?.trim();
+  const legacyStateDirOverride = env.MOLTBOT_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
   if (legacyStateDirOverride) {
-    candidates.push(path.join(resolveUserPath(legacyStateDirOverride), CONFIG_FILENAME));
-    candidates.push(path.join(resolveUserPath(legacyStateDirOverride), LEGACY_CONFIG_FILENAME));
+    candidates.push(path.join(resolveUserPath(legacyStateDirOverride), NEW_CONFIG_FILENAME));
+    for (const name of LEGACY_CONFIG_FILENAMES) {
+      candidates.push(path.join(resolveUserPath(legacyStateDirOverride), name));
+    }
   }
 
-  candidates.push(path.join(newStateDir(homedir), CONFIG_FILENAME));
-  candidates.push(path.join(newStateDir(homedir), LEGACY_CONFIG_FILENAME));
-  candidates.push(path.join(legacyStateDir(homedir), CONFIG_FILENAME));
-  candidates.push(path.join(legacyStateDir(homedir), LEGACY_CONFIG_FILENAME));
+  const newDir = newStateDir(homedir);
+  candidates.push(path.join(newDir, NEW_CONFIG_FILENAME));
+  for (const name of LEGACY_CONFIG_FILENAMES) {
+    candidates.push(path.join(newDir, name));
+  }
+  for (const legacyDir of legacyStateDirs(homedir)) {
+    candidates.push(path.join(legacyDir, NEW_CONFIG_FILENAME));
+    for (const name of LEGACY_CONFIG_FILENAMES) {
+      candidates.push(path.join(legacyDir, name));
+    }
+  }
   return candidates;
 }
 

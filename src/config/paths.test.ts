@@ -49,16 +49,17 @@ describe("state + config path candidates", () => {
   it("orders default config candidates as new then legacy", () => {
     const home = "/home/test";
     const candidates = resolveDefaultConfigCandidates({} as NodeJS.ProcessEnv, () => home);
-    expect(candidates[0]).toBe(path.join(home, ".moltbot", "moltbot.json"));
-    expect(candidates[1]).toBe(path.join(home, ".moltbot", "clawdbot.json"));
-    expect(candidates[2]).toBe(path.join(home, ".clawdbot", "moltbot.json"));
-    expect(candidates[3]).toBe(path.join(home, ".clawdbot", "clawdbot.json"));
+    const repoRoot = process.cwd();
+    expect(candidates[0]).toBe(path.join(repoRoot, ".unmask", "unmask.json"));
+    expect(candidates[1]).toBe(path.join(repoRoot, ".unmask", "moltbot.json"));
+    expect(candidates[2]).toBe(path.join(repoRoot, ".unmask", "clawdbot.json"));
+    expect(candidates[3]).toBe(path.join(repoRoot, ".unmask", "unmaskbot.json"));
   });
 
-  it("prefers ~/.moltbot when it exists and legacy dir is missing", async () => {
+  it("prefers ~/.unmask when it exists and legacy dir is missing", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "moltbot-state-"));
     try {
-      const newDir = path.join(root, ".moltbot");
+      const newDir = path.join(root, ".unmask");
       await fs.mkdir(newDir, { recursive: true });
       const resolved = resolveStateDir({} as NodeJS.ProcessEnv, () => root);
       expect(resolved).toBe(newDir);

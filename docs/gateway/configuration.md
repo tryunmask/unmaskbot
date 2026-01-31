@@ -1,11 +1,11 @@
 ---
-summary: "All configuration options for ~/.clawdbot/moltbot.json with examples"
+summary: "All configuration options for ~/.unmask/unmask.json with examples"
 read_when:
   - Adding or modifying config fields
 ---
 # Configuration 🔧
 
-Moltbot reads an optional **JSON5** config from `~/.clawdbot/moltbot.json` (comments + trailing commas allowed).
+Moltbot reads an optional **JSON5** config from `./.unmask/unmask.json` (repo-local) or `~/.unmask/unmask.json` (comments + trailing commas allowed). Legacy config paths like `~/.clawdbot/moltbot.json` are still supported.
 
 If the file is missing, Moltbot uses safe-ish defaults (embedded Pi agent + per-sender sessions + workspace `~/clawd`). You usually only need a config to:
 - restrict who can trigger the bot (`channels.whatsapp.allowFrom`, `channels.telegram.allowFrom`, etc.)
@@ -47,7 +47,7 @@ Use `config.apply` to validate + write the full config and restart the Gateway i
 It writes a restart sentinel and pings the last active session after the Gateway comes back.
 
 Warning: `config.apply` replaces the **entire config**. If you want to change only a few keys,
-use `config.patch` or `moltbot config set`. Keep a backup of `~/.clawdbot/moltbot.json`.
+use `config.patch` or `moltbot config set`. Keep a backup of `~/.unmask/unmask.json`.
 
 Params:
 - `raw` (string) — JSON5 payload for the entire config

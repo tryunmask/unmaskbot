@@ -77,7 +77,7 @@ moltbot channels login
 moltbot gateway --port 18789
 ```
 
-3) Put a minimal config in `~/.clawdbot/moltbot.json`:
+3) Put a minimal config in `./.unmask/unmask.json` (repo-local) or `~/.unmask/unmask.json` (legacy: `~/.clawdbot/moltbot.json`):
 
 ```json5
 {

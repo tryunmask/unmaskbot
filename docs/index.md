@@ -126,8 +126,8 @@ If you don’t have a global install yet, run the onboarding step via `pnpm molt
 Multi-instance quickstart (optional):
 
 ```bash
-CLAWDBOT_CONFIG_PATH=~/.clawdbot/a.json \
-CLAWDBOT_STATE_DIR=~/.clawdbot-a \
+CLAWDBOT_CONFIG_PATH=~/.unmask/a.json \
+CLAWDBOT_STATE_DIR=~/.unmask-a \
 moltbot gateway --port 19001
 ```
 
@@ -139,7 +139,7 @@ moltbot message send --target +15555550123 --message "Hello from Moltbot"
 
 ## Configuration (optional)
 
-Config lives at `~/.clawdbot/moltbot.json`.
+Config lives at `./.unmask/unmask.json` (repo-local) or `~/.unmask/unmask.json` (legacy: `~/.clawdbot/moltbot.json`).
 
 - If you **do nothing**, Moltbot uses the bundled Pi binary in RPC mode with per-sender sessions.
 - If you want to lock it down, start with `channels.whatsapp.allowFrom` and (for groups) mention rules.
