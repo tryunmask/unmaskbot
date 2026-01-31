@@ -2,7 +2,6 @@ import type { MoltbotConfig } from "../../config/config.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { logVerbose } from "../../globals.js";
 import type { FinalizedMsgContext } from "../templating.js";
-import { buildFakeContextBundle } from "./fake-profiles.js";
 import type {
   UnmaskCompanyProfile,
   UnmaskContextActorType,

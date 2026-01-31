@@ -2,7 +2,6 @@ import { resolveCommitHash } from "../infra/git-commit.js";
 import { visibleWidth } from "../terminal/ansi.js";
 import { isRich, theme } from "../terminal/theme.js";
 import { pickTagline, type TaglineOptions } from "./tagline.js";
-import { resolveCliName } from "./cli-name.js";
 
 type BannerOptions = TaglineOptions & {
   argv?: string[];
@@ -38,7 +37,6 @@ export function formatCliBannerLine(version: string, options: BannerOptions = {}
   const commitLabel = commit ?? "unknown";
   const tagline = pickTagline(options);
   const rich = options.richTty ?? isRich();
-  const cliName = resolveCliName(options.argv ?? process.argv, options.env);
   const title = "Unmask";
   const prefix = "";
   const columns = options.columns ?? process.stdout.columns ?? 120;
