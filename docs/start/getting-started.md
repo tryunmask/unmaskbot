@@ -48,8 +48,7 @@ run on host, set an explicit per-agent override:
   `moltbot configure --section web` (stores `tools.web.search.apiKey`).
   See [Web tools](/tools/web).
 
-macOS: if you plan to build the apps, install Xcode / CLT. For the CLI + gateway only, Node is enough.
-Windows: use **WSL2** (Ubuntu recommended). WSL2 is strongly recommended; native Windows is untested, more problematic, and has poorer tool compatibility. Install WSL2 first, then run the Linux steps inside WSL. See [Windows (WSL2)](/platforms/windows).
+For the CLI + gateway only, Node is enough.
 
 ## 1) Install the CLI (recommended)
 
@@ -58,12 +57,6 @@ curl -fsSL https://molt.bot/install.sh | bash
 ```
 
 Installer options (install method, non-interactive, from GitHub): [Install](/install).
-
-Windows (PowerShell):
-
-```powershell
-iwr -useb https://molt.bot/install.ps1 | iex
-```
 
 Alternative (global install):
 
@@ -198,7 +191,6 @@ Health probes: `moltbot health` (or `moltbot status --deep`) asks the running ga
 
 ## Next steps (optional, but great)
 
-- macOS menu bar app + voice wake: [macOS app](/platforms/macos)
 - iOS/Android nodes (Canvas/camera/voice): [Nodes](/nodes)
 - Remote access (SSH tunnel / Tailscale Serve): [Remote access](/gateway/remote) and [Tailscale](/gateway/tailscale)
-- Always-on / VPN setups: [Remote access](/gateway/remote), [exe.dev](/platforms/exe-dev), [Hetzner](/platforms/hetzner), [macOS remote](/platforms/mac/remote)
+- Always-on / VPN setups: [Remote access](/gateway/remote), [exe.dev](/platforms/exe-dev), [Hetzner](/platforms/hetzner)

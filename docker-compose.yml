@@ -4,10 +4,15 @@ services:
     environment:
       HOME: /home/node
       TERM: xterm-256color
+      # Repo-local config/state inside the mounted workspace.
+      UNMASKBOT_CONFIG_PATH: /home/node/clawd/.unmask/unmask.json
+      UNMASKBOT_STATE_DIR: /home/node/clawd/.unmask
       CLAWDBOT_GATEWAY_TOKEN: ${CLAWDBOT_GATEWAY_TOKEN}
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
+      UNMASK_API_BASE_URL: ${UNMASK_API_BASE_URL}
+      UNMASK_API_TOKEN: ${UNMASK_API_TOKEN}
     volumes:
       - ${CLAWDBOT_CONFIG_DIR}:/home/node/.clawdbot
       - ${CLAWDBOT_WORKSPACE_DIR}:/home/node/clawd
@@ -33,9 +38,15 @@ services:
       HOME: /home/node
       TERM: xterm-256color
       BROWSER: echo
+      # Repo-local config/state inside the mounted workspace.
+      UNMASKBOT_CONFIG_PATH: /home/node/clawd/.unmask/unmask.json
+      UNMASKBOT_STATE_DIR: /home/node/clawd/.unmask
       CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY}
       CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY}
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
+      UNMASK_API_BASE_URL: ${UNMASK_API_BASE_URL}
+      UNMASK_API_TOKEN: ${UNMASK_API_TOKEN}
+      CONVEX_DEPLOY_KEY: ${CONVEX_DEPLOY_KEY}
     volumes:
       - ${CLAWDBOT_CONFIG_DIR}:/home/node/.clawdbot
       - ${CLAWDBOT_WORKSPACE_DIR}:/home/node/clawd

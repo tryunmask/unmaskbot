@@ -139,6 +139,7 @@ type ReadWebSelfId = typeof import("../../web/auth-store.js").readWebSelfId;
 type WebAuthExists = typeof import("../../web/auth-store.js").webAuthExists;
 type SendMessageWhatsApp = typeof import("../../web/outbound.js").sendMessageWhatsApp;
 type SendPollWhatsApp = typeof import("../../web/outbound.js").sendPollWhatsApp;
+type CreateGroupWhatsApp = typeof import("../../web/outbound.js").createGroupWhatsApp;
 type LoginWeb = typeof import("../../web/login.js").loginWeb;
 type StartWebLoginWithQr = typeof import("../../web/login-qr.js").startWebLoginWithQr;
 type WaitForWebLogin = typeof import("../../web/login-qr.js").waitForWebLogin;
@@ -323,6 +324,7 @@ export type PluginRuntime = {
       webAuthExists: WebAuthExists;
       sendMessageWhatsApp: SendMessageWhatsApp;
       sendPollWhatsApp: SendPollWhatsApp;
+      createGroupWhatsApp: CreateGroupWhatsApp;
       loginWeb: LoginWeb;
       startWebLoginWithQr: StartWebLoginWithQr;
       waitForWebLogin: WaitForWebLogin;

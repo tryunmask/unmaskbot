@@ -23,6 +23,7 @@ fi
 
 mkdir -p "${CLAWDBOT_CONFIG_DIR:-$HOME/.clawdbot}"
 mkdir -p "${CLAWDBOT_WORKSPACE_DIR:-$HOME/clawd}"
+mkdir -p "${CLAWDBOT_WORKSPACE_DIR:-$HOME/clawd}/.unmask"
 
 export CLAWDBOT_CONFIG_DIR="${CLAWDBOT_CONFIG_DIR:-$HOME/.clawdbot}"
 export CLAWDBOT_WORKSPACE_DIR="${CLAWDBOT_WORKSPACE_DIR:-$HOME/clawd}"
@@ -124,30 +125,25 @@ upsert_env() {
   local -a keys=("$@")
   local tmp
   tmp="$(mktemp)"
-  declare -A seen=()
 
   if [[ -f "$file" ]]; then
     while IFS= read -r line || [[ -n "$line" ]]; do
       local key="${line%%=*}"
-      local replaced=false
+      local skip=false
       for k in "${keys[@]}"; do
         if [[ "$key" == "$k" ]]; then
-          printf '%s=%s\n' "$k" "${!k-}" >>"$tmp"
-          seen["$k"]=1
-          replaced=true
+          skip=true
           break
         fi
       done
-      if [[ "$replaced" == false ]]; then
+      if [[ "$skip" == false ]]; then
         printf '%s\n' "$line" >>"$tmp"
       fi
     done <"$file"
   fi
 
   for k in "${keys[@]}"; do
-    if [[ -z "${seen[$k]:-}" ]]; then
-      printf '%s=%s\n' "$k" "${!k-}" >>"$tmp"
-    fi
+    printf '%s=%s\n' "$k" "${!k-}" >>"$tmp"
   done
 
   mv "$tmp" "$file"
@@ -163,7 +159,10 @@ upsert_env "$ENV_FILE" \
   CLAWDBOT_IMAGE \
   CLAWDBOT_EXTRA_MOUNTS \
   CLAWDBOT_HOME_VOLUME \
-  CLAWDBOT_DOCKER_APT_PACKAGES
+  CLAWDBOT_DOCKER_APT_PACKAGES \
+  UNMASK_API_BASE_URL \
+  UNMASK_API_TOKEN \
+  CONVEX_DEPLOY_KEY
 
 echo "==> Building Docker image: $IMAGE_NAME"
 docker build \
@@ -173,15 +172,22 @@ docker build \
   "$ROOT_DIR"
 
 echo ""
-echo "==> Onboarding (interactive)"
-echo "When prompted:"
-echo "  - Gateway bind: lan"
-echo "  - Gateway auth: token"
-echo "  - Gateway token: $CLAWDBOT_GATEWAY_TOKEN"
-echo "  - Tailscale exposure: Off"
-echo "  - Install Gateway daemon: No"
-echo ""
-docker compose "${COMPOSE_ARGS[@]}" run --rm moltbot-cli onboard --no-install-daemon
+echo "==> Onboarding (non-interactive)"
+docker compose "${COMPOSE_ARGS[@]}" run --rm moltbot-cli onboard \
+  --non-interactive \
+  --accept-risk \
+  --flow quickstart \
+  --mode local \
+  --auth-choice skip \
+  --gateway-bind lan \
+  --gateway-auth token \
+  --gateway-token "$CLAWDBOT_GATEWAY_TOKEN" \
+  --tailscale off \
+  --no-install-daemon \
+  --skip-channels \
+  --skip-skills \
+  --skip-ui \
+  --skip-health
 
 echo ""
 echo "==> Provider setup (optional)"

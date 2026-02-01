@@ -185,7 +185,7 @@ describe("update-cli", () => {
     await updateStatusCommand({ json: false });
 
     const logs = vi.mocked(defaultRuntime.log).mock.calls.map((call) => call[0]);
-    expect(logs.join("\n")).toContain("Moltbot update status");
+    expect(logs.join("\n")).toContain("Unmaskbot update status");
   });
 
   it("updateStatusCommand emits JSON", async () => {
@@ -218,11 +218,11 @@ describe("update-cli", () => {
   });
 
   it("defaults to stable channel for package installs when unset", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "moltbot-update-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "unmaskbot-update-"));
     try {
       await fs.writeFile(
         path.join(tempDir, "package.json"),
-        JSON.stringify({ name: "moltbot", version: "1.0.0" }),
+        JSON.stringify({ name: "unmaskbot", version: "1.0.0" }),
         "utf-8",
       );
 
@@ -283,11 +283,11 @@ describe("update-cli", () => {
   });
 
   it("falls back to latest when beta tag is older than release", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "moltbot-update-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "unmaskbot-update-"));
     try {
       await fs.writeFile(
         path.join(tempDir, "package.json"),
-        JSON.stringify({ name: "moltbot", version: "1.0.0" }),
+        JSON.stringify({ name: "unmaskbot", version: "1.0.0" }),
         "utf-8",
       );
 
@@ -336,11 +336,11 @@ describe("update-cli", () => {
   });
 
   it("honors --tag override", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "moltbot-update-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "unmaskbot-update-"));
     try {
       await fs.writeFile(
         path.join(tempDir, "package.json"),
-        JSON.stringify({ name: "moltbot", version: "1.0.0" }),
+        JSON.stringify({ name: "unmaskbot", version: "1.0.0" }),
         "utf-8",
       );
 
@@ -514,12 +514,12 @@ describe("update-cli", () => {
   });
 
   it("requires confirmation on downgrade when non-interactive", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "moltbot-update-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "unmaskbot-update-"));
     try {
       setTty(false);
       await fs.writeFile(
         path.join(tempDir, "package.json"),
-        JSON.stringify({ name: "moltbot", version: "2.0.0" }),
+        JSON.stringify({ name: "unmaskbot", version: "2.0.0" }),
         "utf-8",
       );
 
@@ -567,12 +567,12 @@ describe("update-cli", () => {
   });
 
   it("allows downgrade with --yes in non-interactive mode", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "moltbot-update-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "unmaskbot-update-"));
     try {
       setTty(false);
       await fs.writeFile(
         path.join(tempDir, "package.json"),
-        JSON.stringify({ name: "moltbot", version: "2.0.0" }),
+        JSON.stringify({ name: "unmaskbot", version: "2.0.0" }),
         "utf-8",
       );
 
@@ -636,7 +636,7 @@ describe("update-cli", () => {
   });
 
   it("updateWizardCommand offers dev checkout and forwards selections", async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "moltbot-update-wizard-"));
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "unmaskbot-update-wizard-"));
     const previousGitDir = process.env.CLAWDBOT_GIT_DIR;
     try {
       setTty(true);

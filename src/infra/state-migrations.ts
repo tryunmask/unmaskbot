@@ -8,6 +8,7 @@ import {
   resolveLegacyStateDir,
   resolveNewStateDir,
   resolveOAuthDir,
+  resolveHomeStateDir,
   resolveStateDir,
 } from "../config/paths.js";
 import type { SessionEntry } from "../config/sessions.js";
@@ -65,6 +66,7 @@ type MigrationLogger = {
 
 let autoMigrateChecked = false;
 let autoMigrateStateDirChecked = false;
+let autoMigrateRepoStateDirChecked = false;
 
 function isSurfaceGroupKey(key: string): boolean {
   return key.includes(":group:") || key.includes(":channel:");
@@ -277,12 +279,259 @@ export function resetAutoMigrateLegacyStateDirForTest() {
   autoMigrateStateDirChecked = false;
 }
 
+export function resetAutoMigrateRepoStateDirForTest() {
+  autoMigrateRepoStateDirChecked = false;
+}
+
 type StateDirMigrationResult = {
   migrated: boolean;
   skipped: boolean;
   changes: string[];
   warnings: string[];
 };
+
+function isSymlinkPath(p: string): boolean {
+  try {
+    return fs.lstatSync(p).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+function isEffectivelyEmptyRepoStateDir(dir: string): boolean {
+  if (!existsDir(dir)) return true;
+  const ignored = new Set([
+    "unmask.json",
+    "unmask.json5",
+    // tolerate backups created by `config set`
+    "unmask.json.bak",
+    "unmask.json5.bak",
+  ]);
+  const entries = safeReadDir(dir).filter((e) => !ignored.has(e.name));
+  return entries.length === 0;
+}
+
+function formatRepoStateMigration(legacyDir: string, targetDir: string): string {
+  return "Repo-local state: " + legacyDir + " -> " + targetDir;
+}
+
+type MergeCopyResult = {
+  ok: boolean;
+};
+
+function readDirForMergeCopy(dir: string, warnings: string[]): fs.Dirent[] | null {
+  try {
+    return fs.readdirSync(dir, { withFileTypes: true });
+  } catch (err) {
+    warnings.push(
+      "Failed to read legacy state dir during repo-local migration: " + dir + ": " + String(err),
+    );
+    return null;
+  }
+}
+
+function cleanupMergeCopyArtifacts(paths: string[], warnings: string[]) {
+  if (paths.length === 0) return;
+  const unique = Array.from(new Set(paths)).sort((a, b) => b.length - a.length);
+  for (const target of unique) {
+    try {
+      fs.rmSync(target, { recursive: true, force: true });
+    } catch (err) {
+      warnings.push("Failed cleaning repo-local migration artifact " + target + ": " + String(err));
+    }
+  }
+}
+
+function mergeCopyDir(params: {
+  from: string;
+  to: string;
+  changes: string[];
+  warnings: string[];
+  prefix?: string;
+  created: string[];
+  recordCreation?: boolean;
+}): MergeCopyResult {
+  const { from, to, changes, warnings, created } = params;
+  const recordCreation = params.recordCreation ?? true;
+  const hadDir = existsDir(to);
+  ensureDir(to);
+  if (!hadDir && recordCreation) {
+    created.push(to);
+  }
+  const entries = readDirForMergeCopy(from, warnings);
+  if (!entries) return { ok: false };
+  let ok = true;
+  for (const entry of entries) {
+    const src = path.join(from, entry.name);
+    const dst = path.join(to, entry.name);
+    if (fs.existsSync(dst)) continue;
+    try {
+      if (entry.isDirectory()) {
+        const result = mergeCopyDir({
+          from: src,
+          to: dst,
+          changes,
+          warnings,
+          prefix: params.prefix,
+          created,
+        });
+        if (!result.ok) {
+          ok = false;
+        }
+        continue;
+      }
+      if (entry.isFile()) {
+        fs.copyFileSync(src, dst);
+        created.push(dst);
+        continue;
+      }
+      if (entry.isSymbolicLink()) {
+        const linkTarget = fs.readlinkSync(src);
+        fs.symlinkSync(linkTarget, dst);
+        created.push(dst);
+        continue;
+      }
+    } catch (err) {
+      warnings.push("Failed copying " + src + " -> " + dst + ": " + String(err));
+    }
+  }
+  return { ok };
+}
+
+/**
+ * Move home state into a repo-local `.unmask/` directory when repo-local state is enabled.
+ *
+ * This is designed for local development where you want a repo to be self-contained and
+ * avoid per-machine home-directory state drift (for example, `~/.unmaskbot/`).
+ */
+export async function autoMigrateLegacyRepoStateDir(params: {
+  env?: NodeJS.ProcessEnv;
+  homedir?: () => string;
+  cwd?: () => string;
+  log?: MigrationLogger;
+  now?: () => number;
+}): Promise<StateDirMigrationResult> {
+  if (autoMigrateRepoStateDirChecked) {
+    return { migrated: false, skipped: true, changes: [], warnings: [] };
+  }
+  autoMigrateRepoStateDirChecked = true;
+
+  const env = params.env ?? process.env;
+  const homedir = params.homedir ?? os.homedir;
+  const cwd = params.cwd ?? process.cwd;
+  const now = params.now ?? (() => Date.now());
+
+  // Only migrate when the active state dir is repo-local `.unmask/`.
+  const targetDir = resolveStateDir(env, homedir, cwd);
+  const resolvedTargetDir = path.resolve(targetDir);
+  if (path.basename(resolvedTargetDir) !== ".unmask") {
+    return { migrated: false, skipped: true, changes: [], warnings: [] };
+  }
+
+  // If the repo state dir already has data, do not attempt automatic merges.
+  if (!isEffectivelyEmptyRepoStateDir(targetDir)) {
+    return { migrated: false, skipped: false, changes: [], warnings: [] };
+  }
+
+  // Respect explicit home state dir overrides; don't guess what to migrate from.
+  if (
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.MOLTBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim()
+  ) {
+    return { migrated: false, skipped: true, changes: [], warnings: [] };
+  }
+
+  const home = homedir();
+  const legacyCandidates = [
+    path.join(home, ".unmask"),
+    path.join(home, ".unmaskbot"),
+    path.join(home, ".moltbot"),
+    path.join(home, ".clawdbot"),
+    // In case callers use the previous "home state dir" resolution.
+    resolveHomeStateDir(env, homedir),
+  ]
+    .map((p) => path.resolve(p))
+    .filter((p, idx, arr) => arr.indexOf(p) === idx);
+
+  const legacyDir = legacyCandidates.find(
+    (candidate) =>
+      candidate !== resolvedTargetDir && existsDir(candidate) && !isSymlinkPath(candidate),
+  );
+  if (!legacyDir) {
+    return { migrated: false, skipped: false, changes: [], warnings: [] };
+  }
+
+  const changes: string[] = [];
+  const warnings: string[] = [];
+
+  // Merge-copy into the repo-local directory (best-effort, non-destructive).
+  ensureDir(targetDir);
+  const created: string[] = [];
+  const copyResult = mergeCopyDir({
+    from: legacyDir,
+    to: targetDir,
+    changes,
+    warnings,
+    created,
+    recordCreation: false,
+  });
+  if (!copyResult.ok) {
+    cleanupMergeCopyArtifacts(created, warnings);
+    warnings.push(
+      "Repo-local state migration skipped; failed to read legacy state dir: " + legacyDir,
+    );
+  } else {
+    changes.push(formatRepoStateMigration(legacyDir, targetDir));
+
+    // Symlink the legacy path to the repo-local path to reduce future split-brain state.
+    // This is best-effort and leaves a backup on failure.
+    const backupDir = legacyDir + ".legacy-" + String(now());
+    try {
+      fs.renameSync(legacyDir, backupDir);
+      try {
+        fs.symlinkSync(targetDir, legacyDir, "dir");
+      } catch (err) {
+        try {
+          if (process.platform === "win32") {
+            fs.symlinkSync(targetDir, legacyDir, "junction");
+          } else {
+            throw err;
+          }
+        } catch (fallbackErr) {
+          warnings.push(
+            "Repo-local state migrated, but failed to symlink " +
+              legacyDir +
+              " -> " +
+              targetDir +
+              ": " +
+              String(fallbackErr),
+          );
+          warnings.push("Legacy state kept at: " + backupDir);
+          return { migrated: true, skipped: false, changes, warnings };
+        }
+      }
+      changes.push("Symlinked legacy state dir: " + legacyDir + " -> " + targetDir);
+      warnings.push("Legacy state backup: " + backupDir);
+    } catch (err) {
+      warnings.push(
+        "Repo-local state migrated (copied), but failed to relocate legacy dir: " + String(err),
+      );
+    }
+  }
+
+  const logger = params.log ?? createSubsystemLogger("state-migrations");
+  if (changes.length > 0) {
+    logger.info("Repo-local state migration:\n" + changes.map((e) => "- " + e).join("\n"));
+  }
+  if (warnings.length > 0) {
+    logger.warn(
+      "Repo-local state migration warnings:\n" + warnings.map((e) => "- " + e).join("\n"),
+    );
+  }
+
+  return { migrated: copyResult.ok, skipped: false, changes, warnings };
+}
 
 function resolveSymlinkTarget(linkPath: string): string | null {
   try {
@@ -294,7 +543,7 @@ function resolveSymlinkTarget(linkPath: string): string | null {
 }
 
 function formatStateDirMigration(legacyDir: string, targetDir: string): string {
-  return `State dir: ${legacyDir} → ${targetDir} (legacy path now symlinked)`;
+  return "State dir: " + legacyDir + " -> " + targetDir + " (legacy path now symlinked)";
 }
 
 function isDirPath(filePath: string): boolean {
@@ -388,7 +637,7 @@ export async function autoMigrateLegacyStateDir(params: {
           `State dir moved but failed to link legacy path (${legacyDir} → ${targetDir}): ${String(fallbackErr)}`,
         );
         warnings.push(
-          `Rollback failed; set MOLTBOT_STATE_DIR=${targetDir} to avoid split state: ${String(rollbackErr)}`,
+          `Rollback failed; set UNMASKBOT_STATE_DIR=${targetDir} to avoid split state: ${String(rollbackErr)}`,
         );
         changes.push(`State dir: ${legacyDir} → ${targetDir}`);
       }

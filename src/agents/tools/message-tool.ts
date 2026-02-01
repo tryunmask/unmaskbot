@@ -142,6 +142,15 @@ function buildChannelTargetSchema() {
   };
 }
 
+function buildGroupCreateSchema() {
+  return {
+    subject: Type.Optional(Type.String({ description: "Group subject/name for group-create." })),
+    participants: Type.Optional(
+      Type.Array(Type.String({ description: "Group participant ids (repeatable)." })),
+    ),
+  };
+}
+
 function buildStickerSchema() {
   return {
     emojiName: Type.Optional(Type.String()),
@@ -214,6 +223,7 @@ function buildMessageToolSchemaProps(options: { includeButtons: boolean; include
     ...buildFetchSchema(),
     ...buildPollSchema(),
     ...buildChannelTargetSchema(),
+    ...buildGroupCreateSchema(),
     ...buildStickerSchema(),
     ...buildThreadSchema(),
     ...buildEventSchema(),

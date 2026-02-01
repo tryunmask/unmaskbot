@@ -1,0 +1,110 @@
+// Unmask sample configuration (JSON5).
+//
+// Recommended (repo-local): copy to `./.unmask/unmask.json` in your repo.
+// This keeps config + gateway runtime state (sessions/credentials/allowlists/logs) repo-local and
+// avoids per-machine `~/.*/` state drift.
+//
+// Alternative (home dir): copy to `~/.unmaskbot/unmaskbot.json`.
+// Legacy paths (still supported): `~/.unmask/unmask.json`, `~/.moltbot/moltbot.json`,
+// `~/.clawdbot/moltbot.json`, `~/.clawdbot/clawdbot.json`.
+{
+  agents: {
+    defaults: {
+      skipBootstrap: true,
+      memorySearch: {
+        enabled: false
+      }
+    },
+    list: [
+      {
+        id: "scout",
+        name: "Scout Agent",
+        workspace: "~/unmaskbot/unmask/agents/scout",
+        tools: { allow: ["unmask"] }
+      },
+      {
+        id: "talent",
+        name: "Talent Agent",
+        workspace: "~/unmaskbot/unmask/agents/talent",
+        tools: { allow: ["unmask"] }
+      },
+      {
+        id: "company",
+        name: "Company Agent",
+        workspace: "~/unmaskbot/unmask/agents/company",
+        tools: { allow: ["unmask"] }
+      },
+      {
+        id: "intro",
+        name: "Intro Agent",
+        workspace: "~/unmaskbot/unmask/agents/intro",
+        tools: { allow: ["unmask"] }
+      }
+    ]
+  },
+  bindings: [
+    { match: { channel: "whatsapp", accountId: "scout" }, agentId: "scout" },
+    { match: { channel: "whatsapp", accountId: "talent" }, agentId: "talent" },
+    // Company: groups → intro agent, DMs → company agent
+    { match: { channel: "whatsapp", accountId: "company", peer: { kind: "group" } }, agentId: "intro" },
+    { match: { channel: "whatsapp", accountId: "company" }, agentId: "company" },
+
+    // Telegram: use 3 bot accounts so Scout/Talent/Company can each talk to the end user.
+    // Each bot token is configured under channels.telegram.accounts.<accountId>.botToken
+    // and routed to the matching agent via bindings below.
+    { match: { channel: "telegram", accountId: "scout" }, agentId: "scout" },
+    { match: { channel: "telegram", accountId: "talent" }, agentId: "talent" },
+    { match: { channel: "telegram", accountId: "company" }, agentId: "company" },
+  ],
+  channels: {
+    whatsapp: {
+      dmPolicy: "pairing",
+      allowFrom: ["+447700900123"],
+      accounts: {
+        scout: { enabled: true },
+        talent: { enabled: true },
+        company: { enabled: true }
+      }
+    },
+    telegram: {
+      enabled: true,
+      dmPolicy: "pairing",
+
+      // Optional allowlist (recommended if you don't want random DMs):
+      // allowFrom: ["123456789"],
+
+      accounts: {
+        scout: { enabled: true, botToken: "REPLACE_ME_SCOUT_BOT_TOKEN" },
+        talent: { enabled: true, botToken: "REPLACE_ME_TALENT_BOT_TOKEN" },
+        company: { enabled: true, botToken: "REPLACE_ME_COMPANY_BOT_TOKEN" },
+      },
+    }
+  },
+  plugins: {
+    enabled: true,
+    entries: {
+      unmask: {
+        enabled: true,
+        config: {
+          apiBaseUrl: "https://api.unmask.example",
+          apiToken: "REPLACE_ME",
+          context: {
+            enabled: true,
+            fakeData: true,
+            cacheTtlMs: 60000
+          },
+          endpoints: {
+            shouldRespond: "/v1/agents/should-respond",
+            createReferral: "/v1/scout/referrals",
+            onboardTalent: "/v1/talent/onboard",
+            onboardCompany: "/v1/company/onboard",
+            requestIntro: "/v1/talent/intro-request",
+            acceptIntro: "/v1/company/intro-accept",
+            declineIntro: "/v1/company/intro-decline",
+            contextLookup: "/v1/context/lookup"
+          }
+        }
+      }
+    }
+  }
+}

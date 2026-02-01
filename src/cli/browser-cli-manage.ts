@@ -49,7 +49,7 @@ export function registerBrowserManageCommands(
         const detectedDisplay = detectedPath ? shortenHomePath(detectedPath) : "auto";
         defaultRuntime.log(
           [
-            `profile: ${status.profile ?? "clawd"}`,
+            `profile: ${status.profile ?? "unmask"}`,
             `enabled: ${status.enabled}`,
             `running: ${status.running}`,
             `cdpPort: ${status.cdpPort}`,
@@ -93,8 +93,8 @@ export function registerBrowserManageCommands(
           defaultRuntime.log(JSON.stringify(status, null, 2));
           return;
         }
-        const name = status.profile ?? "clawd";
-        defaultRuntime.log(info(`🦞 browser [${name}] running: ${status.running}`));
+        const name = status.profile ?? "unmask";
+        defaultRuntime.log(info(`browser [${name}] running: ${status.running}`));
       });
     });
 
@@ -127,8 +127,8 @@ export function registerBrowserManageCommands(
           defaultRuntime.log(JSON.stringify(status, null, 2));
           return;
         }
-        const name = status.profile ?? "clawd";
-        defaultRuntime.log(info(`🦞 browser [${name}] running: ${status.running}`));
+        const name = status.profile ?? "unmask";
+        defaultRuntime.log(info(`browser [${name}] running: ${status.running}`));
       });
     });
 

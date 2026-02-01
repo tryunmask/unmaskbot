@@ -245,32 +245,44 @@ export const whatsappPlugin: ChannelPlugin<ResolvedWhatsAppAccount> = {
       const actions = new Set<ChannelMessageActionName>();
       if (gate("reactions")) actions.add("react");
       if (gate("polls")) actions.add("poll");
+      if (gate("groupCreate")) actions.add("group-create");
       return Array.from(actions);
     },
-    supportsAction: ({ action }) => action === "react",
+    supportsAction: ({ action }) => action === "react" || action === "group-create",
     handleAction: async ({ action, params, cfg, accountId }) => {
-      if (action !== "react") {
-        throw new Error(`Action ${action} is not supported for provider ${meta.id}.`);
+      if (action === "react") {
+        const messageId = readStringParam(params, "messageId", {
+          required: true,
+        });
+        const emoji = readStringParam(params, "emoji", { allowEmpty: true });
+        const remove = typeof params.remove === "boolean" ? params.remove : undefined;
+        return await getWhatsAppRuntime().channel.whatsapp.handleWhatsAppAction(
+          {
+            action: "react",
+            chatJid:
+              readStringParam(params, "chatJid") ??
+              readStringParam(params, "to", { required: true }),
+            messageId,
+            emoji,
+            remove,
+            participant: readStringParam(params, "participant"),
+            accountId: accountId ?? undefined,
+            fromMe: typeof params.fromMe === "boolean" ? params.fromMe : undefined,
+          },
+          cfg,
+        );
       }
-      const messageId = readStringParam(params, "messageId", {
-        required: true,
-      });
-      const emoji = readStringParam(params, "emoji", { allowEmpty: true });
-      const remove = typeof params.remove === "boolean" ? params.remove : undefined;
-      return await getWhatsAppRuntime().channel.whatsapp.handleWhatsAppAction(
-        {
-          action: "react",
-          chatJid:
-            readStringParam(params, "chatJid") ?? readStringParam(params, "to", { required: true }),
-          messageId,
-          emoji,
-          remove,
-          participant: readStringParam(params, "participant"),
-          accountId: accountId ?? undefined,
-          fromMe: typeof params.fromMe === "boolean" ? params.fromMe : undefined,
-        },
-        cfg,
-      );
+      if (action === "group-create") {
+        return await getWhatsAppRuntime().channel.whatsapp.handleWhatsAppAction(
+          {
+            ...params,
+            action: "group-create",
+            accountId: accountId ?? undefined,
+          },
+          cfg,
+        );
+      }
+      throw new Error(`Action ${action} is not supported for provider ${meta.id}.`);
     },
   },
   outbound: {

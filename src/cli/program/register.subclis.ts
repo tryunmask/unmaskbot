@@ -227,6 +227,14 @@ const entries: SubCliEntry[] = [
       mod.registerUpdateCli(program);
     },
   },
+  {
+    name: "whatsapp-test",
+    description: "WhatsApp test harness",
+    register: async (program) => {
+      const mod = await import("../whatsapp-test-cli.js");
+      mod.registerWhatsAppTestCli(program);
+    },
+  },
 ];
 
 function removeCommand(program: Command, command: Command) {

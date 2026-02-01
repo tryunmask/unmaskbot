@@ -313,6 +313,8 @@ export async function resolveMessagingTarget(params: {
     }
     if (trimmed.includes("@thread")) return true;
     if (/^(conversation|user):/i.test(trimmed)) return true;
+    // WhatsApp JIDs: groups end with @g.us, users with @s.whatsapp.net or @lid
+    if (/@(g\.us|s\.whatsapp\.net|lid)$/i.test(trimmed)) return true;
     return false;
   };
   if (looksLikeTargetId()) {

@@ -82,7 +82,7 @@ export function parseCliProfileArgs(argv: string[]): CliProfileParseResult {
 
 function resolveProfileStateDir(profile: string, homedir: () => string): string {
   const suffix = profile.toLowerCase() === "default" ? "" : `-${profile}`;
-  return path.join(homedir(), `.clawdbot${suffix}`);
+  return path.join(homedir(), `.unmaskbot${suffix}`);
 }
 
 export function applyCliProfileEnv(params: {
@@ -96,15 +96,26 @@ export function applyCliProfileEnv(params: {
   if (!profile) return;
 
   // Convenience only: fill defaults, never override explicit env values.
-  env.CLAWDBOT_PROFILE = profile;
+  env.UNMASKBOT_PROFILE = profile;
+  if (!env.CLAWDBOT_PROFILE) env.CLAWDBOT_PROFILE = profile;
 
-  const stateDir = env.CLAWDBOT_STATE_DIR?.trim() || resolveProfileStateDir(profile, homedir);
+  const stateDir =
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim() ||
+    resolveProfileStateDir(profile, homedir);
+  if (!env.UNMASKBOT_STATE_DIR?.trim()) env.UNMASKBOT_STATE_DIR = stateDir;
   if (!env.CLAWDBOT_STATE_DIR?.trim()) env.CLAWDBOT_STATE_DIR = stateDir;
 
+  if (!env.UNMASKBOT_CONFIG_PATH?.trim()) {
+    env.UNMASKBOT_CONFIG_PATH = path.join(stateDir, "unmaskbot.json");
+  }
   if (!env.CLAWDBOT_CONFIG_PATH?.trim()) {
-    env.CLAWDBOT_CONFIG_PATH = path.join(stateDir, "moltbot.json");
+    env.CLAWDBOT_CONFIG_PATH = path.join(stateDir, "unmaskbot.json");
   }
 
+  if (profile === "dev" && !env.UNMASKBOT_GATEWAY_PORT?.trim()) {
+    env.UNMASKBOT_GATEWAY_PORT = "19001";
+  }
   if (profile === "dev" && !env.CLAWDBOT_GATEWAY_PORT?.trim()) {
     env.CLAWDBOT_GATEWAY_PORT = "19001";
   }

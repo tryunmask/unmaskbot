@@ -1,4 +1,9 @@
-import type { AnyMessageContent, proto, WAMessage } from "@whiskeysockets/baileys";
+import type {
+  AnyMessageContent,
+  proto,
+  WAMessage,
+  WAGroupCreateResponse,
+} from "@whiskeysockets/baileys";
 import { DisconnectReason, isJidGroup } from "@whiskeysockets/baileys";
 import { formatLocationText } from "../../channels/location.js";
 import { logVerbose, shouldLogVerbose } from "../../globals.js";
@@ -336,6 +341,21 @@ export async function monitorWebInbox(options: {
     sock: {
       sendMessage: (jid: string, content: AnyMessageContent) => sock.sendMessage(jid, content),
       sendPresenceUpdate: (presence, jid?: string) => sock.sendPresenceUpdate(presence, jid),
+      createGroup: (subject: string, participants: string[]) => {
+        // Baileys uses groupCreate (not createGroup)
+        const groupCreate = (
+          sock as unknown as {
+            groupCreate?: (
+              subject: string,
+              participants: string[],
+            ) => Promise<WAGroupCreateResponse>;
+          }
+        ).groupCreate;
+        if (typeof groupCreate !== "function") {
+          throw new Error("groupCreate is not supported by this WhatsApp client");
+        }
+        return groupCreate(subject, participants);
+      },
     },
     defaultAccountId: options.accountId,
   });

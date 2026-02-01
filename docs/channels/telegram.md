@@ -17,6 +17,31 @@ Status: production-ready for bot DMs + groups via grammY. Long-polling by defaul
 3) Start the gateway.
 4) DM access is pairing by default; approve the pairing code on first contact.
 
+## Multi-agent (Scout + Talent + Company all interact with the end user)
+If you want **multiple agents** to interact with the end user on Telegram, the simplest setup is **multiple Telegram bot accounts** (one per agent), then route each account to its agent via `bindings`.
+
+Example (3 bots → 3 agents):
+
+```json5
+{
+  channels: {
+    telegram: {
+      dmPolicy: "pairing",
+      accounts: {
+        scout: { botToken: "REPLACE_ME_SCOUT_BOT_TOKEN" },
+        talent: { botToken: "REPLACE_ME_TALENT_BOT_TOKEN" },
+        company: { botToken: "REPLACE_ME_COMPANY_BOT_TOKEN" }
+      }
+    }
+  },
+  bindings: [
+    { match: { channel: "telegram", accountId: "scout" }, agentId: "scout" },
+    { match: { channel: "telegram", accountId: "talent" }, agentId: "talent" },
+    { match: { channel: "telegram", accountId: "company" }, agentId: "company" }
+  ]
+}
+```
+
 Minimal config:
 ```json5
 {

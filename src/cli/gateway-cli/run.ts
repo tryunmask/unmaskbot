@@ -53,7 +53,8 @@ type GatewayRunOpts = {
 const gatewayLog = createSubsystemLogger("gateway");
 
 async function runGatewayCommand(opts: GatewayRunOpts) {
-  const isDevProfile = process.env.CLAWDBOT_PROFILE?.trim().toLowerCase() === "dev";
+  const isDevProfile =
+    (process.env.UNMASKBOT_PROFILE ?? process.env.CLAWDBOT_PROFILE)?.trim().toLowerCase() === "dev";
   const devMode = Boolean(opts.dev) || isDevProfile;
   if (opts.reset && !devMode) {
     defaultRuntime.error("Use --reset with --dev.");
@@ -65,6 +66,7 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
   setVerbose(Boolean(opts.verbose));
   if (opts.claudeCliLogs) {
     setConsoleSubsystemFilter(["agent/claude-cli"]);
+    process.env.UNMASKBOT_CLAUDE_CLI_LOG_OUTPUT = "1";
     process.env.CLAWDBOT_CLAUDE_CLI_LOG_OUTPUT = "1";
   }
   const wsLogRaw = (opts.compact ? "compact" : opts.wsLog) as string | undefined;
@@ -82,10 +84,12 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
   setGatewayWsLogStyle(wsLogStyle);
 
   if (opts.rawStream) {
+    process.env.UNMASKBOT_RAW_STREAM = "1";
     process.env.CLAWDBOT_RAW_STREAM = "1";
   }
   const rawStreamPath = toOptionString(opts.rawStreamPath);
   if (rawStreamPath) {
+    process.env.UNMASKBOT_RAW_STREAM_PATH = rawStreamPath;
     process.env.CLAWDBOT_RAW_STREAM_PATH = rawStreamPath;
   }
 
@@ -134,7 +138,10 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
   }
   if (opts.token) {
     const token = toOptionString(opts.token);
-    if (token) process.env.CLAWDBOT_GATEWAY_TOKEN = token;
+    if (token) {
+      process.env.UNMASKBOT_GATEWAY_TOKEN = token;
+      process.env.CLAWDBOT_GATEWAY_TOKEN = token;
+    }
   }
   const authModeRaw = toOptionString(opts.auth);
   const authMode: GatewayAuthMode | null =
@@ -163,7 +170,7 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
   if (!opts.allowUnconfigured && mode !== "local") {
     if (!configExists) {
       defaultRuntime.error(
-        `Missing config. Run \`${formatCliCommand("moltbot setup")}\` or set gateway.mode=local (or pass --allow-unconfigured).`,
+        `Missing config. Run \`${formatCliCommand("unmaskbot setup")}\` or set gateway.mode=local (or pass --allow-unconfigured).`,
       );
     } else {
       defaultRuntime.error(
@@ -286,7 +293,7 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
     ) {
       const errMessage = describeUnknownError(err);
       defaultRuntime.error(
-        `Gateway failed to start: ${errMessage}\nIf the gateway is supervised, stop it with: ${formatCliCommand("moltbot gateway stop")}`,
+        `Gateway failed to start: ${errMessage}\nIf the gateway is supervised, stop it with: ${formatCliCommand("unmaskbot gateway stop")}`,
       );
       try {
         const diagnostics = await inspectPortUsage(port);

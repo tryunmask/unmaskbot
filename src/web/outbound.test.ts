@@ -8,13 +8,19 @@ vi.mock("./media.js", () => ({
   loadWebMedia: (...args: unknown[]) => loadWebMediaMock(...args),
 }));
 
-import { sendMessageWhatsApp, sendPollWhatsApp, sendReactionWhatsApp } from "./outbound.js";
+import {
+  createGroupWhatsApp,
+  sendMessageWhatsApp,
+  sendPollWhatsApp,
+  sendReactionWhatsApp,
+} from "./outbound.js";
 
 describe("web outbound", () => {
   const sendComposingTo = vi.fn(async () => {});
   const sendMessage = vi.fn(async () => ({ messageId: "msg123" }));
   const sendPoll = vi.fn(async () => ({ messageId: "poll123" }));
   const sendReaction = vi.fn(async () => {});
+  const createGroup = vi.fn(async () => ({ status: 200, gid: "12345@g.us" }));
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -23,6 +29,7 @@ describe("web outbound", () => {
       sendMessage,
       sendPoll,
       sendReaction,
+      createGroup,
     });
   });
 
@@ -164,5 +171,13 @@ describe("web outbound", () => {
       false,
       undefined,
     );
+  });
+
+  it("creates groups via active listener", async () => {
+    const result = await createGroupWhatsApp("Study Group", ["+1555", "+1666"], {
+      verbose: false,
+    });
+    expect(result).toEqual({ status: 200, gid: "12345@g.us" });
+    expect(createGroup).toHaveBeenCalledWith("Study Group", ["+1555", "+1666"]);
   });
 });

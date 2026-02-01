@@ -2,6 +2,7 @@ import { withProgress } from "../cli/progress.js";
 import { loadConfig, resolveGatewayPort } from "../config/config.js";
 import { probeGateway } from "../gateway/probe.js";
 import { discoverGatewayBeacons } from "../infra/bonjour-discovery.js";
+import { WIDE_AREA_DISCOVERY_DOMAIN } from "../infra/widearea-dns.js";
 import { resolveSshConfig } from "../infra/ssh-config.js";
 import { parseSshTarget, startSshPortForward } from "../infra/ssh-tunnel.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -276,10 +277,11 @@ export async function gatewayStatusCommand(
 
   runtime.log("");
   runtime.log(colorize(rich, theme.heading, "Discovery (this machine)"));
+  const wideAreaDomain = WIDE_AREA_DISCOVERY_DOMAIN.replace(/\.$/, "");
   runtime.log(
     discovery.length > 0
-      ? `Found ${discovery.length} gateway(s) via Bonjour (local. + moltbot.internal.)`
-      : "Found 0 gateways via Bonjour (local. + moltbot.internal.)",
+      ? `Found ${discovery.length} gateway(s) via Bonjour (local. + ${wideAreaDomain}.)`
+      : `Found 0 gateways via Bonjour (local. + ${wideAreaDomain}.)`,
   );
   if (discovery.length === 0) {
     runtime.log(

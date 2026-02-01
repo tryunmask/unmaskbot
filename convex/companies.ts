@@ -1,0 +1,83 @@
+import { v } from "convex/values";
+
+import { internalMutation, internalQuery } from "./_generated/server.js";
+
+export const findByPhone = internalQuery({
+  args: {
+    phone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("companies")
+      .withIndex("by_phone", (q) => q.eq("phone", args.phone))
+      .first();
+  },
+});
+
+const normalizeCompanyName = (value?: string) => value?.trim().toLowerCase() || undefined;
+
+export const findByNameLower = internalQuery({
+  args: {
+    nameLower: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("companies")
+      .withIndex("by_nameLower", (q) => q.eq("nameLower", args.nameLower))
+      .first();
+  },
+});
+
+export const upsert = internalMutation({
+  args: {
+    phone: v.string(),
+    name: v.optional(v.string()),
+    domain: v.optional(v.string()),
+    website: v.optional(v.string()),
+    summary: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const existing = await ctx.db
+      .query("companies")
+      .withIndex("by_phone", (q) => q.eq("phone", args.phone))
+      .first();
+    const nameLower = normalizeCompanyName(args.name);
+
+    if (existing) {
+      const patch: Record<string, unknown> = { updatedAt: now };
+      let updated = false;
+      const fields = ["name", "domain", "website", "summary", "notes"] as const;
+      for (const key of fields) {
+        const value = args[key];
+        if (value !== undefined && value !== (existing as Record<string, unknown>)[key]) {
+          patch[key] = value;
+          updated = true;
+        }
+      }
+      if (nameLower && nameLower !== (existing as Record<string, unknown>).nameLower) {
+        patch.nameLower = nameLower;
+        updated = true;
+      }
+      patch.status = updated ? "updated" : existing.status;
+      await ctx.db.patch(existing._id, patch);
+      return { id: existing._id, status: updated ? "updated" : "ok" };
+    }
+
+    const id = await ctx.db.insert("companies", {
+      phone: args.phone,
+      name: args.name,
+      nameLower,
+      domain: args.domain,
+      website: args.website,
+      summary: args.summary,
+      notes: args.notes,
+      status: "ok",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { id, status: "ok" };
+  },
+});

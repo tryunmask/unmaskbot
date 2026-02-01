@@ -53,11 +53,11 @@ async function requireRiskAcknowledgement(params: {
     [
       "Security warning — please read.",
       "",
-      "Moltbot is a hobby project and still in beta. Expect sharp edges.",
+      "Unmask Gateway is in active development. Expect sharp edges.",
       "This bot can read files and run actions if tools are enabled.",
       "A bad prompt can trick it into doing unsafe things.",
       "",
-      "If you’re not comfortable with basic security and access control, don’t run Moltbot.",
+      "If you’re not comfortable with basic security and access control, don’t run the Gateway.",
       "Ask someone experienced to help before enabling tools or exposing it to the internet.",
       "",
       "Recommended baseline:",
@@ -67,10 +67,10 @@ async function requireRiskAcknowledgement(params: {
       "- Use the strongest available model for any bot with tools or untrusted inboxes.",
       "",
       "Run regularly:",
-      "moltbot security audit --deep",
-      "moltbot security audit --fix",
+      "unmaskbot security audit --deep",
+      "unmaskbot security audit --fix",
       "",
-      "Must read: https://docs.molt.bot/gateway/security",
+      "Must read: https://docs.unmask.ai/gateway/security",
     ].join("\n"),
     "Security",
   );
@@ -90,7 +90,7 @@ export async function runOnboardingWizard(
   prompter: WizardPrompter,
 ) {
   printWizardHeader(runtime);
-  await prompter.intro("Moltbot onboarding");
+  await prompter.intro("Unmask onboarding");
   await requireRiskAcknowledgement({ opts, prompter });
 
   const snapshot = await readConfigFileSnapshot();
@@ -103,19 +103,19 @@ export async function runOnboardingWizard(
         [
           ...snapshot.issues.map((iss) => `- ${iss.path}: ${iss.message}`),
           "",
-          "Docs: https://docs.molt.bot/gateway/configuration",
+          "Docs: https://docs.unmask.ai/gateway/configuration",
         ].join("\n"),
         "Config issues",
       );
     }
     await prompter.outro(
-      `Config invalid. Run \`${formatCliCommand("moltbot doctor")}\` to repair it, then re-run onboarding.`,
+      `Config invalid. Run \`${formatCliCommand("unmaskbot doctor")}\` to repair it, then re-run onboarding.`,
     );
     runtime.exit(1);
     return;
   }
 
-  const quickstartHint = `Configure details later via ${formatCliCommand("moltbot configure")}.`;
+  const quickstartHint = `Configure details later via ${formatCliCommand("unmaskbot configure")}.`;
   const manualHint = "Configure port, network, Tailscale, and auth options.";
   const explicitFlowRaw = opts.flow?.trim();
   const normalizedExplicitFlow = explicitFlowRaw === "manual" ? "advanced" : explicitFlowRaw;

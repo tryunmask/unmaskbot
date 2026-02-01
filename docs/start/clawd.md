@@ -77,7 +77,7 @@ moltbot channels login
 moltbot gateway --port 18789
 ```
 
-3) Put a minimal config in `~/.clawdbot/moltbot.json`:
+3) Put a minimal config in `./.unmask/unmask.json` (repo-local) or `~/.unmask/unmask.json` (legacy: `~/.clawdbot/moltbot.json`):
 
 ```json5
 {
@@ -227,9 +227,4 @@ Logs live under `/tmp/moltbot/` (default: `moltbot-YYYY-MM-DD.log`).
 - WebChat: [WebChat](/web/webchat)
 - Gateway ops: [Gateway runbook](/gateway)
 - Cron + wakeups: [Cron jobs](/automation/cron-jobs)
-- macOS menu bar companion: [Moltbot macOS app](/platforms/macos)
-- iOS node app: [iOS app](/platforms/ios)
-- Android node app: [Android app](/platforms/android)
-- Windows status: [Windows (WSL2)](/platforms/windows)
-- Linux status: [Linux app](/platforms/linux)
 - Security: [Security](/gateway/security)

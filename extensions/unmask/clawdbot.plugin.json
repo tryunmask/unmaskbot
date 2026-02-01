@@ -1,0 +1,48 @@
+{
+  "id": "unmask",
+  "name": "Unmask",
+  "description": "Unmask core tools for scout, talent, and company workflows.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "apiBaseUrl": {
+        "type": "string",
+        "minLength": 1
+      },
+      "apiToken": {
+        "type": "string"
+      },
+      "timeoutMs": {
+        "type": "number",
+        "minimum": 1000
+      },
+      "endpoints": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "shouldRespond": { "type": "string", "minLength": 1 },
+          "createReferral": { "type": "string", "minLength": 1 },
+          "onboardTalent": { "type": "string", "minLength": 1 },
+          "onboardCompany": { "type": "string", "minLength": 1 },
+          "requestIntro": { "type": "string", "minLength": 1 },
+          "acceptIntro": { "type": "string", "minLength": 1 },
+          "declineIntro": { "type": "string", "minLength": 1 },
+          "contextLookup": { "type": "string", "minLength": 1 }
+        }
+      },
+      "context": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "fakeData": { "type": "boolean" },
+          "cacheTtlMs": { "type": "number", "minimum": 0 },
+          "summaryMaxChars": { "type": "number", "minimum": 100 },
+          "timeoutMs": { "type": "number", "minimum": 1000 }
+        }
+      }
+    },
+    "required": ["apiBaseUrl"]
+  }
+}

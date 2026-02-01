@@ -13,6 +13,7 @@ import { getReplyFromConfig } from "../reply.js";
 import type { FinalizedMsgContext } from "../templating.js";
 import type { GetReplyOptions, ReplyPayload } from "../types.js";
 import { formatAbortReplyText, tryFastAbortFromMessage } from "./abort.js";
+import { applyUnmaskContext } from "../context/context-hydrator.js";
 import { shouldSkipDuplicateInbound } from "./inbound-dedupe.js";
 import type { ReplyDispatcher, ReplyDispatchKind } from "./reply-dispatcher.js";
 import { isRoutableChannel, routeReply } from "./route-reply.js";
@@ -181,6 +182,12 @@ export async function dispatchReplyFromConfig(params: {
       .catch((err) => {
         logVerbose(`dispatch-from-config: message_received hook failed: ${String(err)}`);
       });
+  }
+
+  try {
+    await applyUnmaskContext({ ctx, cfg });
+  } catch (err) {
+    logVerbose(`dispatch-from-config: context hydrate failed: ${String(err)}`);
   }
 
   // Check if we should route replies to originating channel instead of dispatcher.

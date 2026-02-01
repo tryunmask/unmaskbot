@@ -5,6 +5,7 @@ import {
   readChannelAllowFromStore,
   upsertChannelPairingRequest,
 } from "../../pairing/pairing-store.js";
+import { filterAllowFromByPrefixes } from "../../channels/shared-allowfrom.js";
 import { isSelfChatMode, normalizeE164 } from "../../utils.js";
 import { resolveWhatsAppAccount } from "../accounts.js";
 
@@ -40,10 +41,14 @@ export async function checkInboundAccessControl(params: {
   });
   const dmPolicy = cfg.channels?.whatsapp?.dmPolicy ?? "pairing";
   const configuredAllowFrom = account.allowFrom;
+  const defaultSharedAllowFrom = filterAllowFromByPrefixes({
+    allowFrom: cfg.channels?.defaults?.allowFrom,
+    prefixes: ["whatsapp:", "wa:"],
+  });
   const storeAllowFrom = await readChannelAllowFromStore("whatsapp").catch(() => []);
   // Without user config, default to self-only DM access so the owner can talk to themselves.
   const combinedAllowFrom = Array.from(
-    new Set([...(configuredAllowFrom ?? []), ...storeAllowFrom]),
+    new Set([...(configuredAllowFrom ?? []), ...defaultSharedAllowFrom, ...storeAllowFrom]),
   );
   const defaultAllowFrom =
     combinedAllowFrom.length === 0 && params.selfE164 ? [params.selfE164] : undefined;
@@ -66,7 +71,12 @@ export async function checkInboundAccessControl(params: {
   const dmHasWildcard = allowFrom?.includes("*") ?? false;
   const normalizedAllowFrom =
     allowFrom && allowFrom.length > 0
-      ? allowFrom.filter((entry) => entry !== "*").map(normalizeE164)
+      ? allowFrom
+          .filter((entry) => entry !== "*")
+          .map((entry) =>
+            // Support both "whatsapp:" and "wa:" prefixes in shared allowlists.
+            normalizeE164(String(entry).replace(/^wa:/i, "whatsapp:")),
+          )
       : [];
   const groupHasWildcard = groupAllowFrom?.includes("*") ?? false;
   const normalizedGroupAllowFrom =

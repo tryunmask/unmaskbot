@@ -532,8 +532,7 @@ Two common Windows issues:
 - Ensure `<prefix>\\bin` is on PATH (on most systems it is `%AppData%\\npm`).
 - Close and reopen PowerShell after updating PATH.
 
-If you want the smoothest Windows setup, use **WSL2** instead of native Windows.
-Docs: [Windows](/platforms/windows).
+If you want the smoothest Windows setup, use **WSL2** instead of native Windows and follow the Linux guide.
 
 ### The docs didnt answer my question how do I get a better answer
 
@@ -871,8 +870,7 @@ Baseline guidance:
 - **OS:** Ubuntu LTS or another modern Debian/Ubuntu.
 
 If you are on Windows, **WSL2 is the easiest VM style setup** and has the best tooling
-compatibility. See [Windows](/platforms/windows), [VPS hosting](/vps).
-If you are running macOS in a VM, see [macOS VM](/platforms/macos-vm).
+compatibility. See [VPS hosting](/vps).
 
 ## What is Moltbot?
 
@@ -2421,11 +2419,11 @@ moltbot gateway restart
 
 If you run it manually (no service), use:
 
-```powershell
+```bash
 moltbot gateway run
 ```
 
-Docs: [Windows (WSL2)](/platforms/windows), [Gateway service runbook](/gateway).
+Docs: [Gateway service runbook](/gateway).
 
 ### The Gateway is up but replies never arrive What should I check
 

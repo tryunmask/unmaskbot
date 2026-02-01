@@ -2,7 +2,6 @@ import { resolveCommitHash } from "../infra/git-commit.js";
 import { visibleWidth } from "../terminal/ansi.js";
 import { isRich, theme } from "../terminal/theme.js";
 import { pickTagline, type TaglineOptions } from "./tagline.js";
-import { resolveCliName } from "./cli-name.js";
 
 type BannerOptions = TaglineOptions & {
   argv?: string[];
@@ -38,9 +37,8 @@ export function formatCliBannerLine(version: string, options: BannerOptions = {}
   const commitLabel = commit ?? "unknown";
   const tagline = pickTagline(options);
   const rich = options.richTty ?? isRich();
-  const cliName = resolveCliName(options.argv ?? process.argv, options.env);
-  const title = cliName === "moltbot" ? "🦞 Moltbot" : "🦞 Moltbot";
-  const prefix = "🦞 ";
+  const title = "Unmask";
+  const prefix = "";
   const columns = options.columns ?? process.stdout.columns ?? 120;
   const plainFullLine = `${title} ${version} (${commitLabel}) — ${tagline}`;
   const fitsOnOneLine = visibleWidth(plainFullLine) <= columns;
@@ -64,15 +62,7 @@ export function formatCliBannerLine(version: string, options: BannerOptions = {}
   return `${line1}\n${line2}`;
 }
 
-const LOBSTER_ASCII = [
-  "▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄",
-  "██░▄▀▄░██░▄▄▄░██░████▄▄░▄▄██░▄▄▀██░▄▄▄░█▄▄░▄▄██",
-  "██░█░█░██░███░██░██████░████░▄▄▀██░███░███░████",
-  "██░███░██░▀▀▀░██░▀▀░███░████░▀▀░██░▀▀▀░███░████",
-  "▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀",
-  "               🦞 FRESH DAILY 🦞               ",
-  " ",
-];
+const LOBSTER_ASCII = ["UNMASK", " "];
 
 export function formatCliBannerArt(options: BannerOptions = {}): string {
   const rich = options.richTty ?? isRich();
@@ -86,13 +76,8 @@ export function formatCliBannerArt(options: BannerOptions = {}): string {
   };
 
   const colored = LOBSTER_ASCII.map((line) => {
-    if (line.includes("FRESH DAILY")) {
-      return (
-        theme.muted("              ") +
-        theme.accent("🦞") +
-        theme.info(" FRESH DAILY ") +
-        theme.accent("🦞")
-      );
+    if (line.includes("UNMASK")) {
+      return theme.heading("UNMASK");
     }
     return splitGraphemes(line).map(colorChar).join("");
   });
