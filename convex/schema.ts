@@ -33,6 +33,7 @@ export default defineSchema({
   companies: defineTable({
     phone: v.string(),
     name: v.optional(v.string()),
+    nameLower: v.optional(v.string()),
     domain: v.optional(v.string()),
     website: v.optional(v.string()),
     summary: v.optional(v.string()),
@@ -40,7 +41,9 @@ export default defineSchema({
     status: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_phone", ["phone"]),
+  })
+    .index("by_phone", ["phone"])
+    .index("by_nameLower", ["nameLower"]),
   introRequests: defineTable({
     talentPhone: v.string(),
     companyId: v.optional(v.string()),

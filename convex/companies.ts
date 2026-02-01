@@ -14,6 +14,20 @@ export const findByPhone = internalQuery({
   },
 });
 
+const normalizeCompanyName = (value?: string) => value?.trim().toLowerCase() || undefined;
+
+export const findByNameLower = internalQuery({
+  args: {
+    nameLower: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("companies")
+      .withIndex("by_nameLower", (q) => q.eq("nameLower", args.nameLower))
+      .first();
+  },
+});
+
 export const upsert = internalMutation({
   args: {
     phone: v.string(),
@@ -29,6 +43,7 @@ export const upsert = internalMutation({
       .query("companies")
       .withIndex("by_phone", (q) => q.eq("phone", args.phone))
       .first();
+    const nameLower = normalizeCompanyName(args.name);
 
     if (existing) {
       const patch: Record<string, unknown> = { updatedAt: now };
@@ -41,6 +56,10 @@ export const upsert = internalMutation({
           updated = true;
         }
       }
+      if (nameLower && nameLower !== (existing as Record<string, unknown>).nameLower) {
+        patch.nameLower = nameLower;
+        updated = true;
+      }
       patch.status = updated ? "updated" : existing.status;
       await ctx.db.patch(existing._id, patch);
       return { id: existing._id, status: updated ? "updated" : "ok" };
@@ -49,6 +68,7 @@ export const upsert = internalMutation({
     const id = await ctx.db.insert("companies", {
       phone: args.phone,
       name: args.name,
+      nameLower,
       domain: args.domain,
       website: args.website,
       summary: args.summary,

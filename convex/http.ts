@@ -143,6 +143,28 @@ http.route({
       scoutPhone,
     });
 
+    const enqueueTalentInvite = async () => {
+      const scoutRecord =
+        scoutPhone && scoutPhone.trim()
+          ? await ctx.runQuery(internal.scouts.findByPhone, { phone: scoutPhone })
+          : null;
+      const scoutName = readOptionalString(scoutRecord?.name);
+      const inviteName = scoutName ?? "A scout";
+      const inviteMessage =
+        `${inviteName} invited you to Unmask. ` +
+        (name ? `Hi ${name} — ` : "") +
+        "I'm your Unmask contact — I can get you warm intros to the right teams.";
+
+      await ctx.runMutation(internal.outbound.enqueue, {
+        toPhone: phone,
+        message: inviteMessage,
+        agentId: "talent",
+        channel: "whatsapp",
+        accountId: "talent",
+        addToAllowlist: true,
+      });
+    };
+
     if (existing) {
       const result = await ctx.runMutation(internal.referrals.update, {
         id: existing._id,
@@ -151,6 +173,18 @@ http.route({
         notes,
         source,
       });
+      if (scoutPhone) {
+        await ctx.runMutation(internal.talent.upsert, {
+          phone,
+          fullName: name ?? undefined,
+          role: undefined,
+          location: undefined,
+          linkedin: linkedin ?? undefined,
+          notes: notes ?? undefined,
+          scoutPhone,
+        });
+      }
+      await enqueueTalentInvite();
       return jsonResponse({
         id: existing._id,
         status: result.updated ? "updated" : "exists",
@@ -166,25 +200,19 @@ http.route({
       source,
     });
 
-    // Look up scout name for invite message
-    const scoutRecord =
-      scoutPhone && scoutPhone.trim()
-        ? await ctx.runQuery(internal.scouts.findByPhone, { phone: scoutPhone })
-        : null;
-    const scoutName = readOptionalString(scoutRecord?.name);
-    const inviteName = scoutName ?? "A scout";
-    const inviteMessage =
-      `${inviteName} invited you to Unmask. ` +
-      "I'm your Unmask contact — I can get you warm intros to the right teams.";
+    if (scoutPhone) {
+      await ctx.runMutation(internal.talent.upsert, {
+        phone,
+        fullName: name ?? undefined,
+        role: undefined,
+        location: undefined,
+        linkedin: linkedin ?? undefined,
+        notes: notes ?? undefined,
+        scoutPhone,
+      });
+    }
 
-    await ctx.runMutation(internal.outbound.enqueue, {
-      toPhone: phone,
-      message: inviteMessage,
-      agentId: "talent",
-      channel: "whatsapp",
-      accountId: "talent",
-      addToAllowlist: true,
-    });
+    await enqueueTalentInvite();
 
     return jsonResponse({ id, status: "created" });
   }),
@@ -256,13 +284,48 @@ http.route({
     const reason = readOptionalString(payload.reason);
     if (!reason) return jsonError(400, "reason is required");
 
+    const companyName = readOptionalString(payload.companyName);
+    const companyRecord = companyName
+      ? await ctx.runQuery(internal.companies.findByNameLower, {
+          nameLower: companyName.trim().toLowerCase(),
+        })
+      : null;
+    const companyPhone = readOptionalString(companyRecord?.phone);
+
     const result = await ctx.runMutation(internal.intros.create, {
       talentPhone,
       companyId: readOptionalString(payload.companyId),
-      companyName: readOptionalString(payload.companyName),
+      companyName,
+      companyPhone,
       reason,
       notes: readOptionalString(payload.notes),
     });
+
+    const talentRecord = await ctx.runQuery(internal.talent.findByPhone, {
+      phone: talentPhone,
+    });
+    const talentName = readOptionalString(talentRecord?.fullName) ?? "A candidate";
+
+    if (companyPhone) {
+      const introMessage =
+        `Intro request for ${talentName}. ` +
+        `Company: ${companyName ?? "Unknown"}. ` +
+        `Reason: ${reason}. ` +
+        `Intro ID: ${result.id}. ` +
+        `Talent phone: ${talentPhone}. ` +
+        (readOptionalString(talentRecord?.linkedin)
+          ? `LinkedIn: ${readOptionalString(talentRecord?.linkedin)}. `
+          : "") +
+        "Accept or decline?";
+      await ctx.runMutation(internal.outbound.enqueue, {
+        toPhone: companyPhone,
+        message: introMessage,
+        agentId: "company",
+        channel: "whatsapp",
+        accountId: "company",
+        addToAllowlist: true,
+      });
+    }
 
     return jsonResponse(result);
   }),

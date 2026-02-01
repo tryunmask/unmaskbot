@@ -2,9 +2,9 @@ export type ScenarioRole = "persona" | "scout" | "talent" | "company";
 
 export type ScenarioStep = {
   id: string;
-  from: ScenarioRole;
-  to: ScenarioRole;
+  to: Exclude<ScenarioRole, "persona">;
   prompt: string;
+  fallbackReply?: string;
 };
 
 export type Scenario = {
@@ -17,42 +17,30 @@ export type Scenario = {
 const GOLDEN_PATH: Scenario = {
   id: "golden-path",
   label: "Persona intro loop (Scout → Talent → Company)",
-  description: "Persona accepts Scout, Talent requests intro, Company confirms, persona approves.",
+  description: "Persona adapts to each role (scout, talent, company) and replies after inbound.",
   steps: [
     {
       id: "persona-accepts-scout",
-      from: "persona",
       to: "scout",
       prompt:
-        "You are acting as the persona. Accept the scout request and share your contact details: {{persona_contact}}. Keep it short and friendly.",
-    },
-    {
-      id: "talent-contacts-persona",
-      from: "talent",
-      to: "persona",
-      prompt:
-        'You are the talent agent. The persona just wrote: "{{last_persona}}". Reach out to the persona and ask for a warm intro.',
+        "You are a scout. Refer {{candidate_name}} to the network. Phone: {{candidate_phone}}. LinkedIn: {{candidate_linkedin}}.",
+      fallbackReply:
+        "Hey! I'd like to refer {{candidate_name}}. Strong software engineer. Phone: {{candidate_phone}}.",
     },
     {
       id: "persona-requests-intro",
-      from: "persona",
       to: "talent",
       prompt:
-        'You are the persona. Talent wrote: "{{last_talent}}". Reply confirming you want the intro and include your contact details: {{persona_contact}}.',
+        "You are the candidate {{candidate_name}}. Ask for a warm intro to {{intro_company}} and keep it short.",
+      fallbackReply:
+        "Hi! I'm {{candidate_name}} and would love a warm intro to {{intro_company}} if possible. Thanks!",
     },
     {
       id: "company-confirms-intro",
-      from: "company",
-      to: "persona",
-      prompt:
-        'You are the company agent. The persona said: "{{last_persona}}". Confirm the intro request and ask for approval to proceed.',
-    },
-    {
-      id: "persona-approves",
-      from: "persona",
       to: "company",
       prompt:
-        'You are the persona. Company wrote: "{{last_company}}". Approve the intro and confirm your preferred contact details: {{persona_contact}}.',
+        "You are {{company_user_name}}, a {{company_name}} executive. When told {{candidate_name}} requested an intro, accept it and keep it short.",
+      fallbackReply: "Yes, please proceed with {{candidate_name}}'s intro. Approved on my end.",
     },
   ],
 };
