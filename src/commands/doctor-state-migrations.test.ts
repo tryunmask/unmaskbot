@@ -327,9 +327,9 @@ describe("doctor legacy state migrations", () => {
     expect(store["agent:main:main"]?.sessionId).toBe("legacy");
   });
 
-  it("auto-migrates legacy state dir to ~/.moltbot", async () => {
+  it("auto-migrates legacy state dir to ~/.unmaskbot", async () => {
     const root = await makeTempRoot();
-    const legacyDir = path.join(root, ".clawdbot");
+    const legacyDir = path.join(root, ".moltbot");
     fs.mkdirSync(legacyDir, { recursive: true });
     fs.writeFileSync(path.join(legacyDir, "foo.txt"), "legacy", "utf-8");
 
@@ -338,7 +338,7 @@ describe("doctor legacy state migrations", () => {
       homedir: () => root,
     });
 
-    const targetDir = path.join(root, ".moltbot");
+    const targetDir = path.join(root, ".unmaskbot");
     expect(fs.existsSync(path.join(targetDir, "foo.txt"))).toBe(true);
     const legacyStat = fs.lstatSync(legacyDir);
     expect(legacyStat.isSymbolicLink()).toBe(true);
@@ -348,8 +348,8 @@ describe("doctor legacy state migrations", () => {
 
   it("skips state dir migration when target exists", async () => {
     const root = await makeTempRoot();
-    const legacyDir = path.join(root, ".clawdbot");
-    const targetDir = path.join(root, ".moltbot");
+    const legacyDir = path.join(root, ".moltbot");
+    const targetDir = path.join(root, ".unmaskbot");
     fs.mkdirSync(legacyDir, { recursive: true });
     fs.mkdirSync(targetDir, { recursive: true });
 
@@ -364,7 +364,7 @@ describe("doctor legacy state migrations", () => {
 
   it("skips state dir migration when env override is set", async () => {
     const root = await makeTempRoot();
-    const legacyDir = path.join(root, ".clawdbot");
+    const legacyDir = path.join(root, ".moltbot");
     fs.mkdirSync(legacyDir, { recursive: true });
 
     const result = await autoMigrateLegacyStateDir({

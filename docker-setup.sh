@@ -23,6 +23,7 @@ fi
 
 mkdir -p "${CLAWDBOT_CONFIG_DIR:-$HOME/.clawdbot}"
 mkdir -p "${CLAWDBOT_WORKSPACE_DIR:-$HOME/clawd}"
+mkdir -p "${CLAWDBOT_WORKSPACE_DIR:-$HOME/clawd}/.unmask"
 
 export CLAWDBOT_CONFIG_DIR="${CLAWDBOT_CONFIG_DIR:-$HOME/.clawdbot}"
 export CLAWDBOT_WORKSPACE_DIR="${CLAWDBOT_WORKSPACE_DIR:-$HOME/clawd}"

@@ -4,7 +4,7 @@ This folder contains Unmask agent workspace templates and a sample config.
 
 ## Quick start (Docker)
 1) Copy agent templates to a workspace path (one per agent).
-2) Create `./.unmask/unmask.json` (repo-local) or `~/.unmask/unmask.json` from `config/unmask.example.json5` (legacy: `~/.clawdbot/moltbot.json`).
+2) Create `./.unmask/unmask.json` (repo-local, recommended) or `~/.unmaskbot/unmaskbot.json` from `config/unmask.example.json5` (legacy: `~/.unmask/unmask.json`, `~/.moltbot/moltbot.json`, `~/.clawdbot/moltbot.json`, `~/.clawdbot/clawdbot.json`).
 3) Run `./docker-setup.sh` to build and start the gateway container.
 4) Link WhatsApp accounts (scout, talent, company) via `docker compose run --rm moltbot-cli channels login --account <id>`.
 
