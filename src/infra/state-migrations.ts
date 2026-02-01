@@ -317,7 +317,7 @@ function isEffectivelyEmptyRepoStateDir(dir: string): boolean {
 }
 
 function formatRepoStateMigration(legacyDir: string, targetDir: string): string {
-  return `Repo-local state: ${legacyDir} → ${targetDir}`;
+  return "Repo-local state: " + legacyDir + " -> " + targetDir;
 }
 
 function mergeCopyDir(params: {
@@ -348,7 +348,7 @@ function mergeCopyDir(params: {
         continue;
       }
     } catch (err) {
-      warnings.push(`Failed copying ${src} → ${dst}: ${String(err)}`);
+      warnings.push("Failed copying " + src + " -> " + dst + ": " + String(err));
     }
   }
 }
@@ -357,7 +357,7 @@ function mergeCopyDir(params: {
  * Move home state into a repo-local `.unmask/` directory when repo-local state is enabled.
  *
  * This is designed for local development where you want a repo to be self-contained and
- * avoid per-machine `~/.*/` state drift.
+ * avoid per-machine home-directory state drift (for example, `~/.unmaskbot/`).
  */
 export async function autoMigrateLegacyRepoStateDir(params: {
   env?: NodeJS.ProcessEnv;
@@ -388,7 +388,11 @@ export async function autoMigrateLegacyRepoStateDir(params: {
   }
 
   // Respect explicit home state dir overrides; don't guess what to migrate from.
-  if (env.UNMASKBOT_STATE_DIR?.trim() || env.MOLTBOT_STATE_DIR?.trim()) {
+  if (
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.MOLTBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim()
+  ) {
     return { migrated: false, skipped: true, changes: [], warnings: [] };
   }
 
@@ -404,7 +408,9 @@ export async function autoMigrateLegacyRepoStateDir(params: {
     .map((p) => path.resolve(p))
     .filter((p, idx, arr) => arr.indexOf(p) === idx);
 
-  const legacyDir = legacyCandidates.find((candidate) => existsDir(candidate) && !isSymlinkPath(candidate));
+  const legacyDir = legacyCandidates.find(
+    (candidate) => existsDir(candidate) && !isSymlinkPath(candidate),
+  );
   if (!legacyDir) {
     return { migrated: false, skipped: false, changes: [], warnings: [] };
   }
@@ -419,7 +425,7 @@ export async function autoMigrateLegacyRepoStateDir(params: {
 
   // Symlink the legacy path to the repo-local path to reduce future split-brain state.
   // This is best-effort and leaves a backup on failure.
-  const backupDir = `${legacyDir}.legacy-${now()}`;
+  const backupDir = legacyDir + ".legacy-" + String(now());
   try {
     fs.renameSync(legacyDir, backupDir);
     try {
@@ -433,24 +439,33 @@ export async function autoMigrateLegacyRepoStateDir(params: {
         }
       } catch (fallbackErr) {
         warnings.push(
-          `Repo-local state migrated, but failed to symlink ${legacyDir} → ${targetDir}: ${String(fallbackErr)}`,
+          "Repo-local state migrated, but failed to symlink " +
+            legacyDir +
+            " -> " +
+            targetDir +
+            ": " +
+            String(fallbackErr),
         );
-        warnings.push(`Legacy state kept at: ${backupDir}`);
+        warnings.push("Legacy state kept at: " + backupDir);
         return { migrated: true, skipped: false, changes, warnings };
       }
     }
-    changes.push(`Symlinked legacy state dir: ${legacyDir} → ${targetDir}`);
-    warnings.push(`Legacy state backup: ${backupDir}`);
+    changes.push("Symlinked legacy state dir: " + legacyDir + " -> " + targetDir);
+    warnings.push("Legacy state backup: " + backupDir);
   } catch (err) {
-    warnings.push(`Repo-local state migrated (copied), but failed to relocate legacy dir: ${String(err)}`);
+    warnings.push(
+      "Repo-local state migrated (copied), but failed to relocate legacy dir: " + String(err),
+    );
   }
 
   const logger = params.log ?? createSubsystemLogger("state-migrations");
   if (changes.length > 0) {
-    logger.info(`Repo-local state migration:\n${changes.map((e) => `- ${e}`).join("\n")}`);
+    logger.info("Repo-local state migration:\n" + changes.map((e) => "- " + e).join("\n"));
   }
   if (warnings.length > 0) {
-    logger.warn(`Repo-local state migration warnings:\n${warnings.map((e) => `- ${e}`).join("\n")}`);
+    logger.warn(
+      "Repo-local state migration warnings:\n" + warnings.map((e) => "- " + e).join("\n"),
+    );
   }
 
   return { migrated: true, skipped: false, changes, warnings };
@@ -466,7 +481,7 @@ function resolveSymlinkTarget(linkPath: string): string | null {
 }
 
 function formatStateDirMigration(legacyDir: string, targetDir: string): string {
-  return `State dir: ${legacyDir} → ${targetDir} (legacy path now symlinked)`;
+  return "State dir: " + legacyDir + " -> " + targetDir + " (legacy path now symlinked)";
 }
 
 function isDirPath(filePath: string): boolean {

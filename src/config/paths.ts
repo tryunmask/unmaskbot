@@ -78,7 +78,13 @@ export function resolveRepoStateDirCandidate(
   cwd: () => string = process.cwd,
 ): string | null {
   // Respect explicit overrides (these are authoritative).
-  if (env.UNMASKBOT_STATE_DIR?.trim() || env.MOLTBOT_STATE_DIR?.trim()) return null;
+  if (
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.MOLTBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim()
+  ) {
+    return null;
+  }
   const repoRoot = resolveRepoRoot(cwd);
   if (!repoRoot) return null;
   const repoStateDir = path.join(repoRoot, REPO_STATE_DIRNAME);
@@ -100,7 +106,10 @@ export function resolveHomeStateDir(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = os.homedir,
 ): string {
-  const override = env.UNMASKBOT_STATE_DIR?.trim() || env.MOLTBOT_STATE_DIR?.trim();
+  const override =
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.MOLTBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim();
   if (override) return resolveUserPath(override);
   const legacyDir = legacyStateDir(homedir);
   const newDir = newStateDir(homedir);
@@ -123,7 +132,10 @@ export function resolveStateDir(
   homedir: () => string = os.homedir,
   cwd: () => string = process.cwd,
 ): string {
-  const override = env.UNMASKBOT_STATE_DIR?.trim() || env.MOLTBOT_STATE_DIR?.trim();
+  const override =
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.MOLTBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim();
   if (override) return resolveUserPath(override);
   const repoState = resolveRepoStateDirCandidate(env, cwd);
   if (repoState) return repoState;
@@ -151,7 +163,10 @@ export function resolveCanonicalConfigPath(
   env: NodeJS.ProcessEnv = process.env,
   stateDir: string = resolveStateDir(env, os.homedir),
 ): string {
-  const override = env.UNMASKBOT_CONFIG_PATH?.trim() || env.MOLTBOT_CONFIG_PATH?.trim();
+  const override =
+    env.UNMASKBOT_CONFIG_PATH?.trim() ||
+    env.MOLTBOT_CONFIG_PATH?.trim() ||
+    env.CLAWDBOT_CONFIG_PATH?.trim();
   if (override) return resolveUserPath(override);
   // When state lives in repo-local `.unmask/`, prefer the repo-local config filename.
   if (path.basename(path.resolve(stateDir)) === REPO_STATE_DIRNAME) {
@@ -188,9 +203,15 @@ export function resolveConfigPath(
   stateDir: string = resolveStateDir(env, os.homedir),
   homedir: () => string = os.homedir,
 ): string {
-  const override = env.UNMASKBOT_CONFIG_PATH?.trim() || env.MOLTBOT_CONFIG_PATH?.trim();
+  const override =
+    env.UNMASKBOT_CONFIG_PATH?.trim() ||
+    env.MOLTBOT_CONFIG_PATH?.trim() ||
+    env.CLAWDBOT_CONFIG_PATH?.trim();
   if (override) return resolveUserPath(override);
-  const stateOverride = env.UNMASKBOT_STATE_DIR?.trim() || env.MOLTBOT_STATE_DIR?.trim();
+  const stateOverride =
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.MOLTBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim();
   const candidates = [
     // Repo-local preferred names
     path.join(stateDir, REPO_CONFIG_FILENAME),
@@ -225,7 +246,10 @@ export function resolveDefaultConfigCandidates(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = os.homedir,
 ): string[] {
-  const explicit = env.UNMASKBOT_CONFIG_PATH?.trim() || env.MOLTBOT_CONFIG_PATH?.trim();
+  const explicit =
+    env.UNMASKBOT_CONFIG_PATH?.trim() ||
+    env.MOLTBOT_CONFIG_PATH?.trim() ||
+    env.CLAWDBOT_CONFIG_PATH?.trim();
   if (explicit) return [resolveUserPath(explicit)];
 
   const candidates: string[] = [];
@@ -255,6 +279,16 @@ export function resolveDefaultConfigCandidates(
     candidates.push(path.join(resolveUserPath(legacyStateDirOverride), REPO_CONFIG_JSON5_FILENAME));
     candidates.push(path.join(resolveUserPath(legacyStateDirOverride), CONFIG_FILENAME));
     candidates.push(path.join(resolveUserPath(legacyStateDirOverride), LEGACY_CONFIG_FILENAME));
+  }
+
+  const clawdbotStateDirOverride = env.CLAWDBOT_STATE_DIR?.trim();
+  if (clawdbotStateDirOverride) {
+    candidates.push(path.join(resolveUserPath(clawdbotStateDirOverride), REPO_CONFIG_FILENAME));
+    candidates.push(
+      path.join(resolveUserPath(clawdbotStateDirOverride), REPO_CONFIG_JSON5_FILENAME),
+    );
+    candidates.push(path.join(resolveUserPath(clawdbotStateDirOverride), CONFIG_FILENAME));
+    candidates.push(path.join(resolveUserPath(clawdbotStateDirOverride), LEGACY_CONFIG_FILENAME));
   }
 
   candidates.push(path.join(newStateDir(homedir), REPO_CONFIG_FILENAME));
