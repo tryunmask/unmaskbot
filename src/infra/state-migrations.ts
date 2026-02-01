@@ -320,37 +320,92 @@ function formatRepoStateMigration(legacyDir: string, targetDir: string): string 
   return "Repo-local state: " + legacyDir + " -> " + targetDir;
 }
 
+type MergeCopyResult = {
+  ok: boolean;
+};
+
+function readDirForMergeCopy(dir: string, warnings: string[]): fs.Dirent[] | null {
+  try {
+    return fs.readdirSync(dir, { withFileTypes: true });
+  } catch (err) {
+    warnings.push(
+      "Failed to read legacy state dir during repo-local migration: " +
+        dir +
+        ": " +
+        String(err),
+    );
+    return null;
+  }
+}
+
+function cleanupMergeCopyArtifacts(paths: string[], warnings: string[]) {
+  if (paths.length === 0) return;
+  const unique = Array.from(new Set(paths)).sort((a, b) => b.length - a.length);
+  for (const target of unique) {
+    try {
+      fs.rmSync(target, { recursive: true, force: true });
+    } catch (err) {
+      warnings.push(
+        "Failed cleaning repo-local migration artifact " + target + ": " + String(err),
+      );
+    }
+  }
+}
+
 function mergeCopyDir(params: {
   from: string;
   to: string;
   changes: string[];
   warnings: string[];
   prefix?: string;
-}) {
-  const { from, to, changes, warnings } = params;
+  created: string[];
+  recordCreation?: boolean;
+}): MergeCopyResult {
+  const { from, to, changes, warnings, created } = params;
+  const recordCreation = params.recordCreation ?? true;
+  const hadDir = existsDir(to);
   ensureDir(to);
-  for (const entry of safeReadDir(from)) {
+  if (!hadDir && recordCreation) {
+    created.push(to);
+  }
+  const entries = readDirForMergeCopy(from, warnings);
+  if (!entries) return { ok: false };
+  let ok = true;
+  for (const entry of entries) {
     const src = path.join(from, entry.name);
     const dst = path.join(to, entry.name);
     if (fs.existsSync(dst)) continue;
     try {
       if (entry.isDirectory()) {
-        mergeCopyDir({ from: src, to: dst, changes, warnings, prefix: params.prefix });
+        const result = mergeCopyDir({
+          from: src,
+          to: dst,
+          changes,
+          warnings,
+          prefix: params.prefix,
+          created,
+        });
+        if (!result.ok) {
+          ok = false;
+        }
         continue;
       }
       if (entry.isFile()) {
         fs.copyFileSync(src, dst);
+        created.push(dst);
         continue;
       }
       if (entry.isSymbolicLink()) {
         const linkTarget = fs.readlinkSync(src);
         fs.symlinkSync(linkTarget, dst);
+        created.push(dst);
         continue;
       }
     } catch (err) {
       warnings.push("Failed copying " + src + " -> " + dst + ": " + String(err));
     }
   }
+  return { ok };
 }
 
 /**
@@ -420,42 +475,57 @@ export async function autoMigrateLegacyRepoStateDir(params: {
 
   // Merge-copy into the repo-local directory (best-effort, non-destructive).
   ensureDir(targetDir);
-  mergeCopyDir({ from: legacyDir, to: targetDir, changes, warnings });
-  changes.push(formatRepoStateMigration(legacyDir, targetDir));
-
-  // Symlink the legacy path to the repo-local path to reduce future split-brain state.
-  // This is best-effort and leaves a backup on failure.
-  const backupDir = legacyDir + ".legacy-" + String(now());
-  try {
-    fs.renameSync(legacyDir, backupDir);
-    try {
-      fs.symlinkSync(targetDir, legacyDir, "dir");
-    } catch (err) {
-      try {
-        if (process.platform === "win32") {
-          fs.symlinkSync(targetDir, legacyDir, "junction");
-        } else {
-          throw err;
-        }
-      } catch (fallbackErr) {
-        warnings.push(
-          "Repo-local state migrated, but failed to symlink " +
-            legacyDir +
-            " -> " +
-            targetDir +
-            ": " +
-            String(fallbackErr),
-        );
-        warnings.push("Legacy state kept at: " + backupDir);
-        return { migrated: true, skipped: false, changes, warnings };
-      }
-    }
-    changes.push("Symlinked legacy state dir: " + legacyDir + " -> " + targetDir);
-    warnings.push("Legacy state backup: " + backupDir);
-  } catch (err) {
+  const created: string[] = [];
+  const copyResult = mergeCopyDir({
+    from: legacyDir,
+    to: targetDir,
+    changes,
+    warnings,
+    created,
+    recordCreation: false,
+  });
+  if (!copyResult.ok) {
+    cleanupMergeCopyArtifacts(created, warnings);
     warnings.push(
-      "Repo-local state migrated (copied), but failed to relocate legacy dir: " + String(err),
+      "Repo-local state migration skipped; failed to read legacy state dir: " + legacyDir,
     );
+  } else {
+    changes.push(formatRepoStateMigration(legacyDir, targetDir));
+
+    // Symlink the legacy path to the repo-local path to reduce future split-brain state.
+    // This is best-effort and leaves a backup on failure.
+    const backupDir = legacyDir + ".legacy-" + String(now());
+    try {
+      fs.renameSync(legacyDir, backupDir);
+      try {
+        fs.symlinkSync(targetDir, legacyDir, "dir");
+      } catch (err) {
+        try {
+          if (process.platform === "win32") {
+            fs.symlinkSync(targetDir, legacyDir, "junction");
+          } else {
+            throw err;
+          }
+        } catch (fallbackErr) {
+          warnings.push(
+            "Repo-local state migrated, but failed to symlink " +
+              legacyDir +
+              " -> " +
+              targetDir +
+              ": " +
+              String(fallbackErr),
+          );
+          warnings.push("Legacy state kept at: " + backupDir);
+          return { migrated: true, skipped: false, changes, warnings };
+        }
+      }
+      changes.push("Symlinked legacy state dir: " + legacyDir + " -> " + targetDir);
+      warnings.push("Legacy state backup: " + backupDir);
+    } catch (err) {
+      warnings.push(
+        "Repo-local state migrated (copied), but failed to relocate legacy dir: " + String(err),
+      );
+    }
   }
 
   const logger = params.log ?? createSubsystemLogger("state-migrations");
@@ -468,7 +538,7 @@ export async function autoMigrateLegacyRepoStateDir(params: {
     );
   }
 
-  return { migrated: true, skipped: false, changes, warnings };
+  return { migrated: copyResult.ok, skipped: false, changes, warnings };
 }
 
 function resolveSymlinkTarget(linkPath: string): string | null {
