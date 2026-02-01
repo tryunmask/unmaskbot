@@ -1,6 +1,12 @@
 // Unmask sample configuration (JSON5).
-// Copy to ./.unmask/unmask.json (repo-local) or ~/.unmask/unmask.json and edit paths + credentials.
-// Legacy paths (still supported): ~/.clawdbot/moltbot.json, ~/.moltbot/moltbot.json.
+//
+// Recommended (repo-local): copy to `./.unmask/unmask.json` in your repo.
+// This keeps config + gateway runtime state (sessions/credentials/allowlists/logs) repo-local and
+// avoids per-machine `~/.*/` state drift.
+//
+// Alternative (home dir): copy to `~/.unmaskbot/unmaskbot.json`.
+// Legacy paths (still supported): `~/.unmask/unmask.json`, `~/.moltbot/moltbot.json`,
+// `~/.clawdbot/moltbot.json`, `~/.clawdbot/clawdbot.json`.
 {
   agents: {
     defaults: {

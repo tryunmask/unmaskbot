@@ -71,3 +71,6 @@ USER.md
 
 # local tooling
 .serena/
+
+# Repo-local Unmask gateway state (sessions/credentials/logs/config)
+.unmask/

@@ -16,11 +16,31 @@ export function resolveIsNixMode(env: NodeJS.ProcessEnv = process.env): boolean 
 
 export const isNixMode = resolveIsNixMode();
 
-const NEW_STATE_DIRNAME = ".unmask";
-const NEW_CONFIG_FILENAME = "unmask.json";
-const LEGACY_STATE_DIRNAMES = [".clawdbot", ".moltbot", ".unmaskbot"] as const;
-const LEGACY_CONFIG_FILENAMES = ["moltbot.json", "clawdbot.json", "unmaskbot.json"] as const;
-const REPO_CONFIG_DIRNAME = ".unmask";
+const NEW_STATE_DIRNAME = ".unmaskbot";
+// Repo-local state (preferred for local dev; gitignored by default).
+const REPO_STATE_DIRNAME = ".unmask";
+
+// Repo-local config filenames (JSON5 parser accepts .json too).
+const REPO_CONFIG_FILENAME = "unmask.json";
+const REPO_CONFIG_JSON5_FILENAME = "unmask.json5";
+
+const CONFIG_FILENAME = "unmaskbot.json";
+const LEGACY_STATE_DIRNAMES = [".unmask", ".moltbot", ".clawdbot"] as const;
+const LEGACY_CONFIG_FILENAMES = ["moltbot.json", "clawdbot.json"] as const;
+
+const REPO_CONFIG_FILENAMES = [
+  REPO_CONFIG_FILENAME,
+  REPO_CONFIG_JSON5_FILENAME,
+  CONFIG_FILENAME,
+  ...LEGACY_CONFIG_FILENAMES,
+] as const;
+
+const HOME_CONFIG_FILENAMES = [
+  CONFIG_FILENAME,
+  REPO_CONFIG_FILENAME,
+  REPO_CONFIG_JSON5_FILENAME,
+  ...LEGACY_CONFIG_FILENAMES,
+] as const;
 
 function legacyStateDirs(homedir: () => string = os.homedir): string[] {
   return LEGACY_STATE_DIRNAMES.map((name) => path.join(homedir(), name));
@@ -30,13 +50,20 @@ function newStateDir(homedir: () => string = os.homedir): string {
   return path.join(homedir(), NEW_STATE_DIRNAME);
 }
 
+function configCandidatesForDir(dir: string, filenames: readonly string[]): string[] {
+  return filenames.map((name) => path.join(dir, name));
+}
+
+function configCandidatesForStateDir(stateDir: string): string[] {
+  const base = path.basename(path.resolve(stateDir));
+  const filenames = base === REPO_STATE_DIRNAME ? REPO_CONFIG_FILENAMES : HOME_CONFIG_FILENAMES;
+  return configCandidatesForDir(stateDir, filenames);
+}
+
 function resolveRepoConfigCandidates(cwd: () => string = process.cwd): string[] {
   const root = cwd();
-  const repoDir = path.join(root, REPO_CONFIG_DIRNAME);
-  return [
-    path.join(repoDir, NEW_CONFIG_FILENAME),
-    ...LEGACY_CONFIG_FILENAMES.map((name) => path.join(repoDir, name)),
-  ];
+  const repoDir = path.join(root, REPO_STATE_DIRNAME);
+  return configCandidatesForDir(repoDir, REPO_CONFIG_FILENAMES);
 }
 
 function firstExistingPath(candidates: string[]): string | undefined {
@@ -59,13 +86,65 @@ export function resolveNewStateDir(homedir: () => string = os.homedir): string {
   return newStateDir(homedir);
 }
 
+function isDirOrFile(p: string): boolean {
+  try {
+    const stat = fs.statSync(p);
+    return stat.isDirectory() || stat.isFile();
+  } catch {
+    return false;
+  }
+}
+
+function resolveRepoRoot(cwd: () => string = process.cwd): string | null {
+  // Walk up from CWD until we find a `.git` marker.
+  // This supports:
+  // - standard repos (`.git/` directory)
+  // - worktrees/submodules (`.git` file)
+  let current = path.resolve(cwd());
+  for (let depth = 0; depth < 50; depth += 1) {
+    if (isDirOrFile(path.join(current, ".git"))) return current;
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return null;
+}
+
+/**
+ * Resolve a repo-local state dir candidate (`<repo>/.unmask`) when the current
+ * working directory is inside a git repo and the repo has opted in by creating
+ * the `.unmask/` directory (or its config file).
+ */
+export function resolveRepoStateDirCandidate(
+  env: NodeJS.ProcessEnv = process.env,
+  cwd: () => string = process.cwd,
+): string | null {
+  // Respect explicit overrides (these are authoritative).
+  if (
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.MOLTBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim()
+  ) {
+    return null;
+  }
+  const repoRoot = resolveRepoRoot(cwd);
+  if (!repoRoot) return null;
+  const repoStateDir = path.join(repoRoot, REPO_STATE_DIRNAME);
+  const configJson = path.join(repoStateDir, REPO_CONFIG_FILENAME);
+  const configJson5 = path.join(repoStateDir, REPO_CONFIG_JSON5_FILENAME);
+  if (fs.existsSync(repoStateDir) || fs.existsSync(configJson) || fs.existsSync(configJson5)) {
+    return repoStateDir;
+  }
+  return null;
+}
+
 /**
  * State directory for mutable data (sessions, logs, caches).
  * Can be overridden via UNMASKBOT_STATE_DIR (preferred) or MOLTBOT_STATE_DIR / CLAWDBOT_STATE_DIR (legacy).
  * Default: ~/.unmask (new default for Unmask)
  * If legacy dirs exist, prefer them to avoid splitting state.
  */
-export function resolveStateDir(
+export function resolveHomeStateDir(
   env: NodeJS.ProcessEnv = process.env,
   homedir: () => string = os.homedir,
 ): string {
@@ -75,12 +154,34 @@ export function resolveStateDir(
     env.CLAWDBOT_STATE_DIR?.trim();
   if (override) return resolveUserPath(override);
   const newDir = newStateDir(homedir);
+  if (fs.existsSync(newDir)) return newDir;
   const legacyDirs = legacyStateDirs(homedir);
-  const hasLegacy = legacyDirs.some((dir) => fs.existsSync(dir));
-  const hasNew = fs.existsSync(newDir);
-  if (!hasLegacy && hasNew) return newDir;
-  if (hasLegacy) return firstExistingPath(legacyDirs) ?? legacyDirs[0];
+  const legacy = firstExistingPath(legacyDirs);
+  if (legacy) return legacy;
   return newDir;
+}
+
+/**
+ * State directory for mutable data (sessions, logs, caches).
+ *
+ * Precedence:
+ * - `UNMASKBOT_STATE_DIR` / `MOLTBOT_STATE_DIR` (explicit override)
+ * - repo-local `<repo>/.unmask` (opt-in: directory or config file exists)
+ * - home state dir (`~/.unmaskbot` preferred when it exists; else legacy `~/.moltbot`)
+ */
+export function resolveStateDir(
+  env: NodeJS.ProcessEnv = process.env,
+  homedir: () => string = os.homedir,
+  cwd: () => string = process.cwd,
+): string {
+  const override =
+    env.UNMASKBOT_STATE_DIR?.trim() ||
+    env.MOLTBOT_STATE_DIR?.trim() ||
+    env.CLAWDBOT_STATE_DIR?.trim();
+  if (override) return resolveUserPath(override);
+  const repoState = resolveRepoStateDirCandidate(env, cwd);
+  if (repoState) return repoState;
+  return resolveHomeStateDir(env, homedir);
 }
 
 function resolveUserPath(input: string): string {
@@ -109,7 +210,11 @@ export function resolveCanonicalConfigPath(
     env.MOLTBOT_CONFIG_PATH?.trim() ||
     env.CLAWDBOT_CONFIG_PATH?.trim();
   if (override) return resolveUserPath(override);
-  return path.join(stateDir, NEW_CONFIG_FILENAME);
+  // When state lives in repo-local `.unmask/`, prefer the repo-local config filename.
+  if (path.basename(path.resolve(stateDir)) === REPO_STATE_DIRNAME) {
+    return path.join(stateDir, REPO_CONFIG_FILENAME);
+  }
+  return path.join(stateDir, CONFIG_FILENAME);
 }
 
 /**
@@ -149,18 +254,15 @@ export function resolveConfigPath(
     env.UNMASKBOT_STATE_DIR?.trim() ||
     env.MOLTBOT_STATE_DIR?.trim() ||
     env.CLAWDBOT_STATE_DIR?.trim();
-  const candidates = [
-    path.join(stateDir, NEW_CONFIG_FILENAME),
-    ...LEGACY_CONFIG_FILENAMES.map((name) => path.join(stateDir, name)),
-  ];
+  const candidates = configCandidatesForStateDir(stateDir);
   const existing = firstExistingPath(candidates);
   if (existing) return existing;
-  if (stateOverride) return path.join(stateDir, NEW_CONFIG_FILENAME);
+  if (stateOverride) return resolveCanonicalConfigPath(env, stateDir);
   const defaultStateDir = resolveStateDir(env, homedir);
   if (path.resolve(stateDir) === path.resolve(defaultStateDir)) {
     return resolveConfigPathCandidate(env, homedir);
   }
-  return path.join(stateDir, NEW_CONFIG_FILENAME);
+  return resolveCanonicalConfigPath(env, stateDir);
 }
 
 export const CONFIG_PATH = resolveConfigPathCandidate();
@@ -180,32 +282,29 @@ export function resolveDefaultConfigCandidates(
   if (explicit) return [resolveUserPath(explicit)];
 
   const candidates: string[] = [];
-  candidates.push(...resolveRepoConfigCandidates());
-  const unmaskStateDir = env.UNMASKBOT_STATE_DIR?.trim();
-  if (unmaskStateDir) {
-    candidates.push(path.join(resolveUserPath(unmaskStateDir), NEW_CONFIG_FILENAME));
-    for (const name of LEGACY_CONFIG_FILENAMES) {
-      candidates.push(path.join(resolveUserPath(unmaskStateDir), name));
-    }
-  }
-  const legacyStateDirOverride = env.MOLTBOT_STATE_DIR?.trim() || env.CLAWDBOT_STATE_DIR?.trim();
-  if (legacyStateDirOverride) {
-    candidates.push(path.join(resolveUserPath(legacyStateDirOverride), NEW_CONFIG_FILENAME));
-    for (const name of LEGACY_CONFIG_FILENAMES) {
-      candidates.push(path.join(resolveUserPath(legacyStateDirOverride), name));
-    }
+  const repoRoot = resolveRepoRoot();
+  if (repoRoot) {
+    candidates.push(...resolveRepoConfigCandidates(() => repoRoot));
   }
 
-  const newDir = newStateDir(homedir);
-  candidates.push(path.join(newDir, NEW_CONFIG_FILENAME));
-  for (const name of LEGACY_CONFIG_FILENAMES) {
-    candidates.push(path.join(newDir, name));
+  const unmaskStateDir = env.UNMASKBOT_STATE_DIR?.trim();
+  if (unmaskStateDir) {
+    candidates.push(...configCandidatesForStateDir(resolveUserPath(unmaskStateDir)));
   }
+
+  const moltbotStateDir = env.MOLTBOT_STATE_DIR?.trim();
+  if (moltbotStateDir) {
+    candidates.push(...configCandidatesForStateDir(resolveUserPath(moltbotStateDir)));
+  }
+
+  const clawdbotStateDir = env.CLAWDBOT_STATE_DIR?.trim();
+  if (clawdbotStateDir && clawdbotStateDir !== moltbotStateDir) {
+    candidates.push(...configCandidatesForStateDir(resolveUserPath(clawdbotStateDir)));
+  }
+
+  candidates.push(...configCandidatesForStateDir(newStateDir(homedir)));
   for (const legacyDir of legacyStateDirs(homedir)) {
-    candidates.push(path.join(legacyDir, NEW_CONFIG_FILENAME));
-    for (const name of LEGACY_CONFIG_FILENAMES) {
-      candidates.push(path.join(legacyDir, name));
-    }
+    candidates.push(...configCandidatesForStateDir(legacyDir));
   }
   return candidates;
 }
