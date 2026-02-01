@@ -298,11 +298,6 @@ function isSymlinkPath(p: string): boolean {
   }
 }
 
-function isEmptyDir(dir: string): boolean {
-  if (!existsDir(dir)) return true;
-  return safeReadDir(dir).length === 0;
-}
-
 function isEffectivelyEmptyRepoStateDir(dir: string): boolean {
   if (!existsDir(dir)) return true;
   const ignored = new Set([
