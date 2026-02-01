@@ -378,7 +378,8 @@ export async function autoMigrateLegacyRepoStateDir(params: {
 
   // Only migrate when the active state dir is repo-local `.unmask/`.
   const targetDir = resolveStateDir(env, homedir, cwd);
-  if (path.basename(path.resolve(targetDir)) !== ".unmask") {
+  const resolvedTargetDir = path.resolve(targetDir);
+  if (path.basename(resolvedTargetDir) !== ".unmask") {
     return { migrated: false, skipped: true, changes: [], warnings: [] };
   }
 
@@ -409,7 +410,8 @@ export async function autoMigrateLegacyRepoStateDir(params: {
     .filter((p, idx, arr) => arr.indexOf(p) === idx);
 
   const legacyDir = legacyCandidates.find(
-    (candidate) => existsDir(candidate) && !isSymlinkPath(candidate),
+    (candidate) =>
+      candidate !== resolvedTargetDir && existsDir(candidate) && !isSymlinkPath(candidate),
   );
   if (!legacyDir) {
     return { migrated: false, skipped: false, changes: [], warnings: [] };
